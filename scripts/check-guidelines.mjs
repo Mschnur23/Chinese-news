@@ -36,6 +36,7 @@ const requiredFiles = [
   "app.js",
   "ui.js",
   "source.js",
+  "api/word.js",
   "config.js",
   "data/sample.json",
   "CONTRACTS.md",
@@ -71,7 +72,7 @@ const ui = await text("ui.js");
 });
 
 const source = await text("source.js");
-["load", "detail", "save", "list", "remove"].forEach((name) => {
+["load", "detail", "analyze", "explain", "lookupWord", "save", "list", "remove", "reviewQueue", "review", "listKnown", "markKnown", "unmarkKnown"].forEach((name) => {
   check(new RegExp(`async\\s+${name}\\s*\\(`).test(source), `source must expose async ${name}()`);
 });
 
@@ -118,6 +119,18 @@ requiredIds.forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `in
   "home-intro",
   "reading-controls",
   "analysis-term-count",
+  "word-help",
+  "word-help-term",
+  "word-help-pinyin",
+  "word-help-meaning",
+  "review-summary",
+  "review-due-count",
+  "review-start",
+  "review-session",
+  "review-reveal",
+  "review-answer",
+  "known-words",
+  "known-words-list",
 ].forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `index.html is missing Phase 3 DOM id: ${id}`));
 
 const sample = JSON.parse(await text("data/sample.json"));
@@ -128,19 +141,28 @@ for (const [index, item] of (sample.articleSummaries || []).entries()) {
 }
 
 const language = await import(new URL("../api/_shared/language.js", import.meta.url));
+check(language.validateKnownTerms(["规模化", "规模化"]).length === 1, "Known terms must be normalized and deduplicated before analysis");
 check(language.termCountForLearnerLevel("Intermediate") === 20, "Intermediate analysis must request exactly 20 terms");
 check(language.termCountForLearnerLevel("Advanced") === 10, "Advanced analysis must request exactly 10 terms");
 const intermediateSchema = language.analysisSchemaForTermCount(20);
 const advancedSchema = language.analysisSchemaForTermCount(10);
 check(intermediateSchema.properties.terms.minItems === 20 && intermediateSchema.properties.terms.maxItems === 20, "Intermediate schema must require exactly 20 terms");
 check(advancedSchema.properties.terms.minItems === 10 && advancedSchema.properties.terms.maxItems === 10, "Advanced schema must require exactly 10 terms");
-const sampleTerms = sample.articleAnalysis?.terms || [];
+const sampleTermPool = sample.articleAnalysis?.terms || [];
+const sampleTerms = sampleTermPool.slice(0, 20);
 const sampleArticle = sample.articleDetails?.find((item) => item.id === sample.articleAnalysis?.articleId);
-check(sampleTerms.length === 20, "Sample Intermediate analysis must contain exactly 20 terms");
-check(new Set(sampleTerms.map((term) => term.termZh)).size === 20, "Sample Intermediate analysis terms must be unique");
-check(sampleTerms.every((term) => sampleArticle?.bodyText.includes(term.termZh) && sampleArticle.bodyText.includes(term.exactOccurrence) && sampleArticle.bodyText.includes(term.contextSentenceZh)), "Every sample term must be grounded in the sample article");
+check(sampleTermPool.length >= 25, "Sample analysis must contain replacement terms for known-word filtering");
+check(new Set(sampleTermPool.map((term) => term.termZh)).size === sampleTermPool.length, "Sample vocabulary pool terms must be unique");
+check(sampleTermPool.every((term) => sampleArticle?.bodyText.includes(term.termZh) && sampleArticle.bodyText.includes(term.exactOccurrence) && sampleArticle.bodyText.includes(term.contextSentenceZh)), "Every sample term must be grounded in the sample article");
+const sampleHelpTerms = new Set([...sampleTermPool, ...(sample.wordHelp || [])].map((term) => term.termZh));
+const sampleSegments = [...new Set(sampleArticle.paragraphs.flatMap((paragraph) => (
+  [...new Intl.Segmenter("zh", { granularity: "word" }).segment(paragraph)]
+    .filter((segment) => segment.isWordLike && /[\p{Script=Han}]/u.test(segment.segment))
+    .map((segment) => segment.segment)
+)))];
+check(sampleSegments.every((term) => sampleHelpTerms.has(term)), "Every tappable sample word must have contextual preview help");
 const validationArticle = { ...sampleArticle, id: "the-paper:123" };
-const validationAnalysis = { ...sample.articleAnalysis, articleId: validationArticle.id };
+const validationAnalysis = { ...sample.articleAnalysis, articleId: validationArticle.id, terms: sampleTerms };
 check(language.validateAnalysisOutput(validationAnalysis, validationArticle, 20).terms.length === 20, "Intermediate validator must accept exactly 20 grounded terms");
 check(language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.slice(0, 10) }, validationArticle, 10).terms.length === 10, "Advanced validator must accept exactly 10 grounded terms");
 const applicationTerm = sampleTerms.find((term) => term.termZh === "应用");
@@ -157,6 +179,16 @@ try {
   mismatchedTermCountRejected = true;
 }
 check(mismatchedTermCountRejected, "Intermediate validator must reject a response that does not contain 20 terms");
+let knownTermRejected = false;
+try {
+  language.validateAnalysisOutput(validationAnalysis, validationArticle, 20, [sampleTerms[0].termZh]);
+} catch {
+  knownTermRejected = true;
+}
+check(knownTermRejected, "Analysis validation must reject a term the user marked as known");
+const wordSelection = language.validateWordSelection("企业", sampleArticle.paragraphs[1], validationArticle);
+const wordHelp = language.validateWordHelpOutput({ termZh: "企业", pinyin: "qǐyè", meaningEn: "company", contextSentenceZh: sampleArticle.paragraphs[1] }, wordSelection);
+check(wordHelp.termZh === "企业" && wordHelp.pinyin === "qǐyè", "Grounded contextual word help must pass validation");
 
 const secretCandidates = [...availableFiles].filter((path) => /\.(?:js|json|md|html|css)$/.test(path));
 for (const path of secretCandidates) {
@@ -177,9 +209,12 @@ const { source: checkedSource } = await import(new URL("../source.js", import.me
 const firstSave = await checkedSource.save(sample.vocabularyRecord);
 const duplicateSave = await checkedSource.save(sample.vocabularyRecord);
 check(firstSave.added && firstSave.records.length === 1, "First vocabulary save must create one complete record");
-const vocabularyKeys = ["id", "termZh", "pinyin", "meaningEn", "contextSentenceZh", "articleId", "articleTitleZh", "sourceName", "canonicalUrl", "publishedAt", "savedAt"];
+const vocabularyKeys = ["id", "termZh", "pinyin", "meaningEn", "contextSentenceZh", "articleId", "articleTitleZh", "sourceName", "canonicalUrl", "publishedAt", "savedAt", "reviewStage", "reviewDueAt", "lastReviewedAt", "reviewCount", "lapseCount"];
 check(vocabularyKeys.every((key) => Object.hasOwn(firstSave.record, key)), "Saved vocabulary records must contain every contracted key");
 check(!duplicateSave.added && duplicateSave.records.length === 1, "Duplicate vocabulary save must not create a second record");
+check((await checkedSource.reviewQueue()).length === 1, "A newly saved word must be immediately available in the review queue");
+const reviewed = await checkedSource.review(firstSave.record.id, "good", "2026-09-13T10:00:00+08:00");
+check(reviewed.record.reviewCount === 1 && reviewed.record.reviewStage === 1 && reviewed.record.reviewDueAt === "2026-09-14T02:00:00.000Z", "A Good review must schedule the next review one day later");
 const secondRecord = {
   ...sample.vocabularyRecord,
   id: "",
@@ -192,6 +227,11 @@ const secondSave = await checkedSource.save(secondRecord);
 const removal = await checkedSource.remove(firstSave.record.id);
 check(secondSave.records.length === 2, "A distinct vocabulary record must save alongside the first");
 check(removal.removed && removal.records.length === 1 && removal.records[0].termZh === "应用", "Removing one vocabulary record must preserve the others");
+const knownResult = await checkedSource.markKnown("应用");
+check(knownResult.words.length === 1 && knownResult.records.length === 0, "Marking a word known must exclude it and remove its saved review records");
+check((await checkedSource.listKnown())[0].termZh === "应用", "Known words must persist in their versioned browser store");
+const restoredKnown = await checkedSource.unmarkKnown("应用");
+check(restoredKnown.removed && restoredKnown.words.length === 0, "A known word must be restorable to future language guides");
 memory.set(checkedConfig.storageKey, "{malformed");
 let invalidStorageRejected = false;
 try {

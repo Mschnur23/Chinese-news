@@ -8,7 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102b2b'/%3E%3Cpath d='M18 18h28v7H35v21h-7V25H18z' fill='%23f3e9d2'/%3E%3Ccircle cx='45' cy='43' r='6' fill='%23e05a3f'/%3E%3C/svg%3E">
     <title>Daily Chinese Read</title>
     <link rel="stylesheet" href="./style.css">
-    <script type="module" src="./app.js?v=frequency-priority-1"></script>
+    <script type="module" src="./app.js?v=learning-loop-1"></script>
   </head>
   <body>
     <a class="skip-link" href="#article-list">Skip to articles</a>
@@ -89,6 +89,16 @@
           <p class="language-status" id="analysis-status" role="status" aria-live="polite"></p>
           <p class="save-status" id="vocabulary-save-status" role="status" aria-live="polite"></p>
           <div id="analysis-error" class="notice notice--error" role="alert" hidden></div>
+          <section class="word-help" id="word-help" aria-live="polite" hidden>
+            <div>
+              <p class="eyebrow">Tapped word</p>
+              <strong id="word-help-term"></strong>
+              <span id="word-help-pinyin"></span>
+            </div>
+            <p id="word-help-meaning"></p>
+            <p class="language-status" id="word-help-status"></p>
+            <button class="text-button" id="word-help-close" type="button">Close</button>
+          </section>
           <section class="analysis-panel" id="analysis-panel" aria-label="Article language guide" hidden>
             <div class="analysis-gist">
               <p class="eyebrow">Article in brief</p>
@@ -131,9 +141,43 @@
           </div>
           <p>Terms stay in this browser. Each one keeps the sentence and article that gave it meaning.</p>
         </header>
+        <section class="review-summary" id="review-summary" aria-labelledby="review-title">
+          <div>
+            <p class="eyebrow">Spaced repetition</p>
+            <h3 id="review-title"><span id="review-due-count">0</span> due for review</h3>
+            <p>Practice each word in the sentence where you found it.</p>
+          </div>
+          <button class="primary-button" id="review-start" type="button" disabled>Start review</button>
+        </section>
+        <section class="review-session" id="review-session" aria-labelledby="review-term" tabindex="-1" hidden>
+          <div class="review-session__topline">
+            <p class="eyebrow" id="review-progress">Review</p>
+            <button class="text-button" id="review-exit" type="button">Exit review</button>
+          </div>
+          <h3 id="review-term"></h3>
+          <blockquote id="review-context"></blockquote>
+          <button class="secondary-button" id="review-reveal" type="button">Show answer</button>
+          <div class="review-answer" id="review-answer" hidden>
+            <p id="review-pinyin"></p>
+            <p id="review-meaning"></p>
+            <div class="review-ratings" aria-label="Review result">
+              <button type="button" data-review-rating="again">Again · 10 min</button>
+              <button type="button" data-review-rating="good">Good</button>
+              <button type="button" data-review-rating="easy">Easy</button>
+            </div>
+          </div>
+        </section>
         <p id="vocabulary-status" class="status" role="status" aria-live="polite"></p>
         <div id="vocabulary-notice" class="notice" role="alert" hidden></div>
         <div id="vocabulary-list" class="vocabulary-list"></div>
+        <section class="known-words" id="known-words" aria-labelledby="known-words-title">
+          <div>
+            <p class="eyebrow">Personal difficulty</p>
+            <h3 id="known-words-title">Known words</h3>
+            <p>These are excluded from future language guides.</p>
+          </div>
+          <div id="known-words-list"></div>
+        </section>
       </section>
     </main>
 

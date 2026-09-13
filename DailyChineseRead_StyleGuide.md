@@ -208,6 +208,8 @@ Among words that are genuinely difficult or useful for the selected level, prior
 
 Highlighted vocabulary should be subtle.
 
+Unhighlighted Chinese words may use a quiet hover/focus treatment to signal contextual help. Review cards should keep the original Chinese sentence prominent, hide the answer until requested, and present Again, Good, and Easy as clear equal-weight choices.
+
 Recommended treatment:
 
 - Very pale blue background.

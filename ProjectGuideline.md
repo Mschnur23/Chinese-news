@@ -174,6 +174,9 @@ Make the reading session persistent by letting the user keep useful terms withou
 - Duplicate saves do not create duplicate rows.
 - Every displayed record contains the full contract, using explicit fallbacks for unavailable values.
 - A user can remove one vocabulary record without clearing the rest.
+- Saved words enter a spaced-repetition queue that retains their original article sentence.
+- A user can mark a term known so later language guides exclude it, and can restore it from the vocabulary view.
+- Any tappable Chinese content word can request pinyin and a contextual definition grounded in its article sentence.
 - Empty and storage-error states are understandable.
 - All Phase 1 and Phase 2 checks continue to pass.
 

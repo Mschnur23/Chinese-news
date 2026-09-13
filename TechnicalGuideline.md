@@ -356,6 +356,8 @@ Also record in `CONTRACTS.md`:
 - Escape or safely assign every retrieved and model-generated value before rendering.
 - Treat publisher HTML, feed fields, and article text as untrusted input.
 - Store vocabulary only in the user's browser for the MVP. Do not collect identity, analytics, or behavioral profiles.
+- Keep review scheduling and known-word feedback in versioned browser storage. Send only the known-term strings needed to exclude them from a requested analysis.
+- Validate a tapped word and its containing article sentence before requesting contextual word help, then validate the returned term and sentence again.
 - Include source attribution and canonical links, and respect publisher access restrictions.
 
 ## 11. UI and accessibility rules

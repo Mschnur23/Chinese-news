@@ -8,6 +8,7 @@ export const config = Object.freeze({
     article: "/api/article",
     analyze: "/api/analyze",
     explain: "/api/explain",
+    word: "/api/word",
   }),
   sampleDelayMs: 450,
   activeSourceIds: Object.freeze(["the-paper", "stcn", "jiemian"]),
@@ -30,6 +31,9 @@ export const config = Object.freeze({
   analysisRequestTimeoutMs: 45000,
   storageKey: "daily-chinese-read:v1:vocabulary",
   storageVersion: 1,
+  knownWordsStorageKey: "daily-chinese-read:v1:known-words",
+  knownWordsStorageVersion: 1,
+  reviewIntervalsDays: Object.freeze([0, 1, 3, 7, 14, 30, 60, 120]),
   featureFlags: Object.freeze({
     liveRetrieval: true,
     showPreviewStates: previewMode,

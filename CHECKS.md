@@ -44,3 +44,6 @@ Run this list after every phase. Record failures; never remove a previously pass
 40. Removing one saved term preserves every other record and returns the removed term’s Save action to its available state. *(Phase 3)*
 41. Invalid JSON, unknown versions, malformed records, duplicate stored IDs, and unavailable storage show a recoverable error without overwriting existing data. *(Phase 3)*
 42. The interface follows `DailyChineseRead_StyleGuide.md`: warm-gray canvas, white rounded feed cards, restrained blue accents, readable 18–22 px article text, centered content widths, and a two-destination mobile navigation without gradients or decorative animation. *(Style guide)*
+43. New and due saved words enter a spaced-repetition queue; Again, Good, and Easy persist review history and schedule progressively later reviews.
+44. “I know this” persists a normalized known word, removes its saved review records, excludes it from later analysis, and can be undone from My Words.
+45. Tapping an unhighlighted Chinese word requests pinyin and a concise contextual meaning only after the term and sentence are verified against the article.

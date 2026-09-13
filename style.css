@@ -872,6 +872,91 @@ select { border-color: var(--border); border-radius: 10px; }
 .vocabulary-card__pinyin, .vocabulary-card__link { color: var(--accent); }
 .vocabulary-card__context { border-color: var(--accent); }
 
+.term-card__actions {
+  display: grid;
+  gap: 0.35rem;
+  align-content: center;
+  padding: 0.6rem 0.75rem 0.6rem 0;
+}
+.term-card__actions .term-card__save { margin: 0; }
+.term-card__known {
+  min-height: 32px;
+  padding: 0.35rem 0.55rem;
+  border: 0;
+  color: var(--text-secondary);
+  background: transparent;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.term-card__known:hover { color: var(--accent); }
+.term-card__known--known { color: var(--text-primary); cursor: default; }
+
+.word-token {
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  line-height: inherit;
+  cursor: help;
+}
+.word-token:hover, .word-token:focus { color: var(--accent); background: var(--accent-soft); }
+.word-help {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+.word-help[hidden] { display: none; }
+.word-help strong { margin-right: 0.65rem; font-size: 1.35rem; }
+.word-help span { color: var(--accent); }
+.word-help p { margin: 0; }
+.word-help .language-status { grid-column: 1 / -1; }
+
+.review-summary, .known-words {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.review-summary[hidden], .review-session[hidden], .known-words[hidden] { display: none; }
+.review-summary h3, .known-words h3 { margin: 0.15rem 0 0.25rem; }
+.review-summary p, .known-words p { margin: 0; color: var(--text-secondary); }
+.review-session {
+  margin: 1.5rem 0;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  border: 1px solid var(--accent-border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px var(--shadow-subtle);
+}
+.review-session__topline { display: flex; align-items: center; justify-content: space-between; }
+.review-session h3 { margin: 1.5rem 0 1rem; font-size: clamp(2.4rem, 7vw, 4rem); }
+.review-session blockquote { margin: 0 0 1.5rem; padding-left: 1rem; border-left: 3px solid var(--accent); line-height: 1.8; }
+.review-answer { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.review-answer #review-pinyin { color: var(--accent); font-size: 1.15rem; }
+.review-answer #review-meaning { font-size: 1.2rem; font-weight: 700; }
+.review-ratings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-top: 1rem; }
+.review-ratings button { min-height: 44px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; }
+.review-ratings button:hover { border-color: var(--accent); color: var(--accent); }
+.known-words { align-items: flex-start; margin-top: 2rem; }
+#known-words-list { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; }
+.known-word { display: inline-flex; gap: 0.5rem; align-items: center; padding: 0.4rem 0.6rem; border-radius: 999px; background: var(--accent-soft); }
+.vocabulary-card__actions { flex-wrap: wrap; }
+.vocabulary-card__known { color: var(--accent); }
+
 .mobile-nav { display: none; }
 footer { max-width: 850px; border-color: var(--border); }
 
@@ -907,6 +992,13 @@ footer { max-width: 850px; border-color: var(--border); }
   .term-card { grid-template-columns: 1fr; }
   .term-card__jump { padding-left: 0.5rem; }
   .term-card__save { justify-self: start; margin: 0 0.75rem 0.75rem; }
+  .term-card__actions { grid-template-columns: 1fr 1fr; padding-left: 0.5rem; }
+  .term-card__actions .term-card__save { justify-self: stretch; margin: 0; }
+  .word-help { grid-template-columns: 1fr; }
+  .word-help .language-status { grid-column: auto; }
+  .review-summary, .known-words { align-items: stretch; flex-direction: column; }
+  .review-ratings { grid-template-columns: 1fr; }
+  #known-words-list { justify-content: flex-start; }
   .vocabulary__header { grid-template-columns: 1fr; gap: 1rem; }
   .vocabulary-list { grid-template-columns: 1fr; }
   .vocabulary-card { padding-inline: 0.5rem; border-right: 0; }

@@ -1,5 +1,5 @@
-import { config } from "./config.js?v=frequency-priority-1";
-import { source } from "./source.js?v=frequency-priority-1";
+import { config } from "./config.js?v=learning-loop-1";
+import { source } from "./source.js?v=learning-loop-1";
 import {
   clearResults,
   clearReader,
@@ -7,33 +7,50 @@ import {
   getLearnerLevel,
   getPreviewState,
   hideVocabularyView,
+  hideReviewSession,
   markSavedTerms,
+  markKnownTerms,
   onArticleSelected,
   onAnalysisRequested,
   onHomeRequested,
+  onKnownTermRequested,
+  onKnownWordRestoreRequested,
+  onReviewExit,
+  onReviewRated,
+  onReviewReveal,
+  onReviewStart,
   onTermSaveRequested,
   onVocabularyBack,
   onVocabularyRemoveRequested,
   onVocabularyRequested,
+  onVocabularyKnownRequested,
+  onWordHelpRequested,
   onSentenceHelpRequested,
   onLoadRequested,
   onPreviewStateChanged,
   onReaderBack,
   renderArticle,
   renderAnalysis,
+  renderKnownWords,
+  renderReviewCard,
+  renderReviewSummary,
   renderSentenceHelp,
+  renderWordHelp,
   renderVocabulary,
   renderList,
   setArticleBusy,
   setAnalysisBusy,
   setBusy,
   setSentenceHelpBusy,
+  setKnownTermBusy,
+  setReviewBusy,
   setPreviewControlsVisible,
   setStatus,
   setTermSaveBusy,
   setVocabularyBusy,
   setVocabularyCount,
   setVocabularyRemoveBusy,
+  setWordHelpBusy,
   showTermSaveResult,
   showVocabularyEmpty,
   showVocabularyError,
@@ -44,12 +61,17 @@ import {
   showError,
   showNotice,
   showSentenceHelpError,
-} from "./ui.js?v=frequency-priority-1";
+  showWordHelpError,
+  revealReviewAnswer,
+} from "./ui.js?v=learning-loop-1";
 
 let currentArticle = null;
 let articleRequestVersion = 0;
 let analysisRequestVersion = 0;
 let sentenceRequestVersion = 0;
+let wordRequestVersion = 0;
+let reviewRecords = [];
+let reviewTotal = 0;
 
 const previewMessages = Object.freeze({
   empty: "No suitable public articles were found. Try again later.",
@@ -124,11 +146,18 @@ async function prepareAnalysis() {
   showAnalysisError("");
   setAnalysisBusy(true);
   try {
-    const analysis = await source.analyze(article, getLearnerLevel());
+    let knownWords = [];
+    try {
+      knownWords = await source.listKnown();
+    } catch {
+      knownWords = [];
+    }
+    const analysis = await source.analyze(article, getLearnerLevel(), knownWords.map((word) => word.termZh));
     if (requestVersion !== analysisRequestVersion || article !== currentArticle) return;
     renderAnalysis(article, analysis);
     try {
       markSavedTerms(await source.list());
+      markKnownTerms(knownWords);
     } catch (error) {
       showTermSaveResult(-1, false, readableError(error, "Saved vocabulary is temporarily unavailable."));
     }
@@ -137,6 +166,20 @@ async function prepareAnalysis() {
     showAnalysisError(readableError(error, "The language guide could not be prepared. The original article is still available below."));
   } finally {
     if (requestVersion === analysisRequestVersion) setAnalysisBusy(false);
+  }
+}
+
+async function markTermKnown({ term, index }) {
+  setKnownTermBusy(index, true);
+  try {
+    const result = await source.markKnown(term.termZh);
+    setVocabularyCount(result.records.length);
+    markSavedTerms(result.records);
+    markKnownTerms(result.words, `${term.termZh} will be excluded from future language guides.`);
+  } catch (error) {
+    markKnownTerms([], readableError(error, "This word could not be marked as known."));
+  } finally {
+    setKnownTermBusy(index, false);
   }
 }
 
@@ -176,14 +219,76 @@ async function openVocabulary() {
   showVocabularyError("");
   setVocabularyBusy(true);
   try {
-    const records = await source.list();
+    const [records, due, known] = await Promise.all([source.list(), source.reviewQueue(), source.listKnown()]);
     setVocabularyCount(records.length);
+    reviewRecords = due;
+    reviewTotal = due.length;
+    renderReviewSummary(due);
+    hideReviewSession();
+    renderKnownWords(known);
     if (records.length) renderVocabulary(records);
     else showVocabularyEmpty("No saved terms yet. Open an article and save a term from its language guide.");
   } catch (error) {
     showVocabularyError(readableError(error, "Saved vocabulary could not be loaded. Your existing browser data was left unchanged."));
   } finally {
     setVocabularyBusy(false);
+  }
+}
+
+async function markVocabularyKnown(termZh) {
+  try {
+    await source.markKnown(termZh);
+    await openVocabulary();
+  } catch (error) {
+    showVocabularyError(readableError(error, "This word could not be marked as known."), false);
+  }
+}
+
+async function restoreKnownWord(termZh) {
+  try {
+    await source.unmarkKnown(termZh);
+    await openVocabulary();
+  } catch (error) {
+    showVocabularyError(readableError(error, "This word could not be restored."), false);
+  }
+}
+
+function startReview() {
+  if (!reviewRecords.length) return;
+  renderReviewCard(reviewRecords[0], reviewTotal - reviewRecords.length + 1, reviewTotal);
+}
+
+async function rateReview(rating) {
+  const current = reviewRecords[0];
+  if (!current) return;
+  setReviewBusy(true);
+  try {
+    await source.review(current.id, rating);
+    reviewRecords.shift();
+    if (reviewRecords.length) startReview();
+    else {
+      hideReviewSession("Review complete. Your next reviews have been scheduled.");
+      await openVocabulary();
+    }
+  } catch (error) {
+    showVocabularyError(readableError(error, "That review could not be saved."), false);
+  } finally {
+    setReviewBusy(false);
+  }
+}
+
+async function lookupWord({ termZh, contextSentenceZh }) {
+  if (!currentArticle) return;
+  const article = currentArticle;
+  const requestVersion = ++wordRequestVersion;
+  setWordHelpBusy(termZh, true);
+  try {
+    const word = await source.lookupWord({ article, termZh, contextSentenceZh, learnerLevel: getLearnerLevel() });
+    if (requestVersion !== wordRequestVersion || article !== currentArticle) return;
+    renderWordHelp(word);
+  } catch (error) {
+    if (requestVersion !== wordRequestVersion) return;
+    showWordHelpError(readableError(error, "That word could not be explained. Please try again."));
   }
 }
 
@@ -245,6 +350,7 @@ function closeReader() {
   articleRequestVersion += 1;
   analysisRequestVersion += 1;
   sentenceRequestVersion += 1;
+  wordRequestVersion += 1;
   currentArticle = null;
   clearReader();
   setAnalysisBusy(false);
@@ -261,12 +367,20 @@ onPreviewStateChanged(loadReading);
 onArticleSelected(openArticle);
 onAnalysisRequested(prepareAnalysis);
 onTermSaveRequested(saveVocabularyTerm);
+onKnownTermRequested(markTermKnown);
 onSentenceHelpRequested(explainSentence);
+onWordHelpRequested(lookupWord);
 onReaderBack(closeReader);
 onHomeRequested(goHome);
 onVocabularyRequested(openVocabulary);
 onVocabularyBack(hideVocabularyView);
 onVocabularyRemoveRequested(removeVocabulary);
+onVocabularyKnownRequested(markVocabularyKnown);
+onKnownWordRestoreRequested(restoreKnownWord);
+onReviewStart(startReview);
+onReviewReveal(revealReviewAnswer);
+onReviewRated(rateReview);
+onReviewExit(() => hideReviewSession());
 setPreviewControlsVisible(config.featureFlags.showPreviewStates);
 refreshVocabularyCount();
 loadReading();

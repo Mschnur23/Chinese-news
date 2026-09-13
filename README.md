@@ -5,6 +5,8 @@ A focused reading workspace for intermediate-to-advanced Mandarin learners. The 
 Language guides return exactly 20 grounded vocabulary terms for Intermediate readers and exactly 10 for Advanced readers.
 Within the level-appropriate difficult/useful candidates, repeated terms are prioritized by exact-occurrence frequency; difficulty and contextual usefulness break ties, and easy function words are never selected for frequency alone.
 
+The learning loop includes a local spaced-repetition review queue, known-word feedback that shapes later guides, and contextual help for Chinese words tapped directly in an article. These learning records stay in browser storage.
+
 ## Run locally
 
 Use Vercel's local development command so the static site and `/api` routes run together:

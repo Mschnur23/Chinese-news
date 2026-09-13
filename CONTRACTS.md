@@ -85,11 +85,34 @@ The model selects only level-appropriate difficult or useful candidates, then or
   sourceName: "string",
   canonicalUrl: "string",
   publishedAt: "ISO-8601 string | null",
-  savedAt: "ISO-8601 string"
+  savedAt: "ISO-8601 string",
+  reviewStage: "non-negative integer",
+  reviewDueAt: "ISO-8601 string",
+  lastReviewedAt: "ISO-8601 string | null",
+  reviewCount: "non-negative integer",
+  lapseCount: "non-negative integer"
 }
 ```
 
 Vocabulary identity is deterministic: normalized `termZh + articleId + contextSentenceZh`. Array position is never part of identity.
+
+Older records without review fields are read as new cards due at `savedAt`. Ratings schedule the next review locally: Again returns the card in 10 minutes, Good advances one interval, and Easy advances two intervals.
+
+### Known word
+
+```js
+{ termZh: "string", normalized: "string", knownAt: "ISO-8601 string" }
+```
+
+Known words are excluded from later analysis requests. Marking a term known removes saved review records for that normalized term. Restoring it permits future selection again.
+
+### Contextual word help
+
+```js
+{ termZh: "string", pinyin: "string", meaningEn: "string", contextSentenceZh: "string" }
+```
+
+The selected term and context must both match the submitted article before and after model interpretation.
 
 ### Response envelope
 
@@ -110,6 +133,7 @@ Keys are always present. Public errors contain no stack traces, provider output,
 | `/api/article?id=…` | `GET` | Phase 1 | Retrieve and extract one allowlisted public article. |
 | `/api/analyze` | `POST` | Phase 2 | Validate an article and return grounded language analysis. |
 | `/api/explain` | `POST` | Phase 2 | Explain a bounded sentence verified against an article. |
+| `/api/word` | `POST` | Learning loop | Explain one tapped article word in its verified sentence context. |
 
 ## DO NOT CHANGE WITHOUT ASKING
 
@@ -135,11 +159,16 @@ The normal site URL uses live data. Adding `?preview=1` switches that browser se
 
 - `source.load(params)` → `{ items: ArticleSummary[], warnings: string[] }`. Foundation-only test parameters may simulate an isolated source failure; they are removed when Phase 1 replaces sample loading.
 - `source.detail(id)` → `ArticleDetail`.
-- `source.analyze(article, learnerLevel)` → `ArticleAnalysis`.
+- `source.analyze(article, learnerLevel, knownTerms)` → `ArticleAnalysis` with normalized known terms excluded.
 - `source.explain({ article, sentenceZh, learnerLevel })` → `SentenceExplanation`.
 - `source.save(record)` → `{ added: boolean, record: VocabularyRecord, records: VocabularyRecord[] }`.
 - `source.list()` → `VocabularyRecord[]`.
 - `source.remove(id)` → `{ removed: boolean, records: VocabularyRecord[] }`.
+- `source.reviewQueue(now)` → due `VocabularyRecord[]` ordered by due time.
+- `source.review(id, rating, now)` → `{ record: VocabularyRecord, records: VocabularyRecord[] }`.
+- `source.listKnown()` → `KnownWord[]`.
+- `source.markKnown(termZh)` and `source.unmarkKnown(termZh)` update the known-word store.
+- `source.lookupWord({ article, termZh, contextSentenceZh, learnerLevel })` → `ContextualWordHelp`.
 
 All browser network and persistence operations enter through `source.js`.
 
@@ -154,6 +183,7 @@ Allowed values are `Intermediate` and `Advanced`.
 - Key: `daily-chinese-read:v1:vocabulary`.
 - Version: `1`.
 - Stored value in Phase 3: `{ version: 1, records: VocabularyRecord[] }`.
+- Known-word key: `daily-chinese-read:v1:known-words`; stored value: `{ version: 1, words: KnownWord[] }`.
 - Unknown versions or malformed values produce a recoverable storage error and are never silently overwritten.
 
 ### Source identifiers
@@ -188,3 +218,4 @@ This replaces the Phase 0 `yicai` identifier and migrates the source set from tw
 - Invalid JSON, unknown storage versions, invalid records, duplicate stored identities, unavailable storage, and failed writes raise a readable recoverable error. Existing malformed data is never overwritten.
 - `onTermSaveRequested(handler)`, `setTermSaveBusy(index, isBusy)`, `showTermSaveResult(index, isSaved, message)`, `markSavedTerms(records)`, `onVocabularyRequested(handler)`, `onHomeRequested(handler)`, `onVocabularyBack(handler)`, `onVocabularyRemoveRequested(handler)`, `showVocabularyView()`, `hideVocabularyView()`, `setVocabularyBusy(isBusy)`, `setVocabularyRemoveBusy(id, isBusy)`, `setVocabularyCount(count)`, `showVocabularyError(message, clearList)`, `showVocabularyEmpty(message)`, and `renderVocabulary(records)` are additive `ui.js` exports.
 - Phase 3 and the approved style-guide pass add DOM IDs `open-vocabulary`, `vocabulary-count`, `vocabulary-save-status`, `vocabulary`, `vocabulary-back`, `vocabulary-status`, `vocabulary-notice`, `vocabulary-list`, `mobile-home`, `mobile-vocabulary`, `home-intro`, and `reading-controls`.
+- The learning loop adds contextual word help, review queue/session, and known-word controls through the documented `word-help-*`, `review-*`, and `known-words*` DOM IDs.

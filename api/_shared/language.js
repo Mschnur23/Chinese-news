@@ -74,6 +74,15 @@ export function validateInterests(value) {
   return value.map((item) => requireString(item, "Interest", 80));
 }
 
+export function validateKnownTerms(value) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.length > 500) {
+    throw new PublicError("KNOWN_TERMS_INVALID", "The known-word list is invalid.", 400);
+  }
+  const terms = value.map((item) => requireString(item, "Known term", 80));
+  return [...new Map(terms.map((term) => [normalized(term).toLocaleLowerCase(), term])).values()];
+}
+
 export function validateArticleForLanguage(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new PublicError("ARTICLE_INVALID", "The article is missing or invalid.", 400);
@@ -135,7 +144,7 @@ function validateModelString(value, field, maximumLength = 1200) {
   return value.trim();
 }
 
-export function validateAnalysisOutput(value, article, expectedTermCount = 10) {
+export function validateAnalysisOutput(value, article, expectedTermCount = 10, knownTerms = []) {
   if (!value || typeof value !== "object" || value.articleId !== article.id) {
     throw new PublicError("MODEL_OUTPUT_INVALID", "The language guide did not match this article. Please retry.", 502);
   }
@@ -151,6 +160,7 @@ export function validateAnalysisOutput(value, article, expectedTermCount = 10) {
 
   const gistEn = value.gistEn.map((sentence) => validateModelString(sentence, "Gist", 700));
   const seen = new Set();
+  const known = new Set(knownTerms.map((term) => normalized(term).toLocaleLowerCase()));
   const terms = value.terms.map((rawTerm) => {
     if (!rawTerm || typeof rawTerm !== "object") {
       throw new PublicError("MODEL_OUTPUT_INVALID", "The language guide contained an invalid term. Please retry.", 502);
@@ -163,6 +173,9 @@ export function validateAnalysisOutput(value, article, expectedTermCount = 10) {
       contextSentenceZh: validateModelString(rawTerm.contextSentenceZh, "Context", 600),
     };
     const identity = normalized(term.termZh).toLocaleLowerCase();
+    if (known.has(identity)) {
+      throw new PublicError("MODEL_OUTPUT_KNOWN_TERM", "The language guide repeated a word marked as known. Please retry.", 502);
+    }
     if (seen.has(identity)) {
       throw new PublicError("MODEL_OUTPUT_INVALID", "The language guide repeated a term. Please retry.", 502);
     }
@@ -184,6 +197,32 @@ export function validateAnalysisOutput(value, article, expectedTermCount = 10) {
     .map(({ term }) => term);
 
   return { articleId: article.id, gistEn, terms: prioritizedTerms };
+}
+
+export function validateWordSelection(termValue, contextValue, article) {
+  const termZh = requireString(termValue, "Selected word", 80);
+  const contextSentenceZh = requireString(contextValue, "Word context", 600);
+  if (!article.bodyText.includes(contextSentenceZh) || !contextSentenceZh.includes(termZh)) {
+    throw new PublicError("WORD_NOT_IN_ARTICLE", "Tap a word directly in the article before requesting help.", 400);
+  }
+  return { termZh, contextSentenceZh };
+}
+
+export function validateWordHelpOutput(value, selection) {
+  if (!value || typeof value !== "object") {
+    throw new PublicError("MODEL_OUTPUT_INVALID", "The word explanation was invalid. Please retry.", 502);
+  }
+  const termZh = validateModelString(value.termZh, "Selected word", 80);
+  const contextSentenceZh = validateModelString(value.contextSentenceZh, "Word context", 600);
+  if (normalized(termZh) !== normalized(selection.termZh) || normalized(contextSentenceZh) !== normalized(selection.contextSentenceZh)) {
+    throw new PublicError("MODEL_OUTPUT_UNGROUNDED", "The word explanation did not match the selected article text. Please retry.", 502);
+  }
+  return {
+    termZh,
+    pinyin: validateModelString(value.pinyin, "Pinyin", 160),
+    meaningEn: validateModelString(value.meaningEn, "Meaning", 400),
+    contextSentenceZh,
+  };
 }
 
 export function validateExplanationOutput(value, sentenceZh) {
@@ -239,5 +278,17 @@ export const explanationSchema = Object.freeze({
     sentenceZh: { type: "string" },
     translationEn: { type: "string" },
     explanationEn: { type: "string" },
+  },
+});
+
+export const wordHelpSchema = Object.freeze({
+  type: "object",
+  additionalProperties: false,
+  required: ["termZh", "pinyin", "meaningEn", "contextSentenceZh"],
+  properties: {
+    termZh: { type: "string" },
+    pinyin: { type: "string" },
+    meaningEn: { type: "string" },
+    contextSentenceZh: { type: "string" },
   },
 });

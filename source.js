@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=frequency-priority-1";
+import { config } from "./config.js?v=learning-loop-1";
 
 let sampleCache;
 
@@ -36,8 +36,13 @@ function validDate(value, nullable = false) {
   return text;
 }
 
+function nonNegativeInteger(value, fallback = 0) {
+  return Number.isInteger(value) && value >= 0 ? value : fallback;
+}
+
 function normalizeVocabularyRecord(value, options = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw storageError();
+  const savedAt = options.forSave ? new Date().toISOString() : validDate(value.savedAt);
   const record = {
     id: "",
     termZh: requiredText(value.termZh),
@@ -49,7 +54,12 @@ function normalizeVocabularyRecord(value, options = {}) {
     sourceName: requiredText(value.sourceName),
     canonicalUrl: requiredText(value.canonicalUrl),
     publishedAt: validDate(value.publishedAt, true),
-    savedAt: options.forSave ? new Date().toISOString() : validDate(value.savedAt),
+    savedAt,
+    reviewStage: options.forSave ? 0 : nonNegativeInteger(value.reviewStage),
+    reviewDueAt: options.forSave ? savedAt : validDate(value.reviewDueAt || savedAt),
+    lastReviewedAt: options.forSave ? null : (value.lastReviewedAt ? validDate(value.lastReviewedAt) : null),
+    reviewCount: options.forSave ? 0 : nonNegativeInteger(value.reviewCount),
+    lapseCount: options.forSave ? 0 : nonNegativeInteger(value.lapseCount),
   };
   try {
     if (new URL(record.canonicalUrl).protocol !== "https:") throw storageError();
@@ -59,6 +69,41 @@ function normalizeVocabularyRecord(value, options = {}) {
   record.id = vocabularyId(record);
   if (!options.forSave && value.id !== record.id) throw storageError();
   return record;
+}
+
+function normalizeKnownWord(value) {
+  const termZh = requiredText(typeof value === "string" ? value : value?.termZh);
+  return {
+    termZh,
+    normalized: normalizedIdentityPart(termZh),
+    knownAt: typeof value === "string" ? new Date().toISOString() : validDate(value.knownAt),
+  };
+}
+
+function readKnownWordsStore() {
+  try {
+    const raw = localStorage.getItem(config.knownWordsStorageKey);
+    if (raw === null) return [];
+    const value = JSON.parse(raw);
+    if (!value || value.version !== config.knownWordsStorageVersion || !Array.isArray(value.words)) throw storageError();
+    const words = value.words.map(normalizeKnownWord);
+    if (new Set(words.map((word) => word.normalized)).size !== words.length) throw storageError();
+    return words;
+  } catch {
+    throw storageError();
+  }
+}
+
+function writeKnownWordsStore(words) {
+  try {
+    localStorage.setItem(config.knownWordsStorageKey, JSON.stringify({ version: config.knownWordsStorageVersion, words }));
+  } catch {
+    throw storageError();
+  }
+}
+
+function addDays(date, days) {
+  return new Date(date.getTime() + days * 86400000).toISOString();
 }
 
 function readVocabularyStore() {
@@ -143,18 +188,21 @@ export const source = Object.freeze({
     return payload.data;
   },
 
-  async analyze(article, learnerLevel) {
+  async analyze(article, learnerLevel, knownTerms = []) {
     if (config.mode === "sample") {
       const samples = await readSamples();
       if (samples.articleAnalysis?.articleId !== article.id) throw new Error("Sample analysis is unavailable for this article.");
       await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
       const termCount = config.analysisTermCounts[learnerLevel] || config.analysisTermCounts[config.defaultLearnerLevel];
-      return { ...samples.articleAnalysis, terms: samples.articleAnalysis.terms.slice(0, termCount) };
+      const known = new Set(knownTerms.map(normalizedIdentityPart));
+      const terms = samples.articleAnalysis.terms.filter((term) => !known.has(normalizedIdentityPart(term.termZh))).slice(0, termCount);
+      if (terms.length !== termCount) throw new Error("The sample vocabulary pool is exhausted. Restore a known word or choose Advanced.");
+      return { ...samples.articleAnalysis, terms };
     }
     const payload = await requestJson(config.apiRoutes.analyze, {
       method: "POST",
       timeoutMs: config.analysisRequestTimeoutMs,
-      body: { article, learnerLevel, interests: config.defaultInterests },
+      body: { article, learnerLevel, interests: config.defaultInterests, knownTerms },
     });
     return payload.data;
   },
@@ -172,6 +220,23 @@ export const source = Object.freeze({
       method: "POST",
       timeoutMs: config.analysisRequestTimeoutMs,
       body: { article, sentenceZh, learnerLevel },
+    });
+    return payload.data;
+  },
+
+  async lookupWord({ article, termZh, contextSentenceZh, learnerLevel }) {
+    if (config.mode === "sample") {
+      const samples = await readSamples();
+      const match = samples.articleAnalysis.terms.find((term) => term.termZh === termZh)
+        || samples.wordHelp?.find((term) => term.termZh === termZh);
+      if (!match) throw new Error(`Sample word help is unavailable for ${termZh}. Try a highlighted content word.`);
+      await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
+      return { termZh, pinyin: match.pinyin, meaningEn: match.meaningEn, contextSentenceZh };
+    }
+    const payload = await requestJson(config.apiRoutes.word, {
+      method: "POST",
+      timeoutMs: config.analysisRequestTimeoutMs,
+      body: { article, termZh, contextSentenceZh, learnerLevel },
     });
     return payload.data;
   },
@@ -197,5 +262,61 @@ export const source = Object.freeze({
     if (nextRecords.length === records.length) return { removed: false, records };
     writeVocabularyStore(nextRecords);
     return { removed: true, records: nextRecords };
+  },
+
+  async reviewQueue(now = new Date().toISOString()) {
+    const timestamp = new Date(validDate(now)).getTime();
+    return readVocabularyStore()
+      .filter((record) => new Date(record.reviewDueAt).getTime() <= timestamp)
+      .sort((left, right) => new Date(left.reviewDueAt) - new Date(right.reviewDueAt));
+  },
+
+  async review(id, rating, now = new Date().toISOString()) {
+    if (!["again", "good", "easy"].includes(rating)) throw storageError();
+    const reviewedAt = validDate(now);
+    const records = readVocabularyStore();
+    const index = records.findIndex((record) => record.id === requiredText(id));
+    if (index < 0) throw storageError();
+    const current = records[index];
+    const step = rating === "again" ? 0 : rating === "easy" ? 2 : 1;
+    const nextStage = rating === "again" ? 0 : Math.min(current.reviewStage + step, config.reviewIntervalsDays.length - 1);
+    const dueAt = rating === "again"
+      ? new Date(new Date(reviewedAt).getTime() + 10 * 60000).toISOString()
+      : addDays(new Date(reviewedAt), config.reviewIntervalsDays[nextStage]);
+    const record = {
+      ...current,
+      reviewStage: nextStage,
+      reviewDueAt: dueAt,
+      lastReviewedAt: reviewedAt,
+      reviewCount: current.reviewCount + 1,
+      lapseCount: current.lapseCount + (rating === "again" ? 1 : 0),
+    };
+    const nextRecords = [...records];
+    nextRecords[index] = record;
+    writeVocabularyStore(nextRecords);
+    return { record, records: nextRecords };
+  },
+
+  async listKnown() {
+    return readKnownWordsStore();
+  },
+
+  async markKnown(termZh) {
+    const candidate = normalizeKnownWord(termZh);
+    const words = readKnownWordsStore();
+    const existing = words.find((word) => word.normalized === candidate.normalized);
+    const nextWords = existing ? words : [candidate, ...words];
+    const records = readVocabularyStore().filter((record) => normalizedIdentityPart(record.termZh) !== candidate.normalized);
+    writeKnownWordsStore(nextWords);
+    writeVocabularyStore(records);
+    return { added: !existing, word: existing || candidate, words: nextWords, records };
+  },
+
+  async unmarkKnown(termZh) {
+    const normalized = normalizedIdentityPart(termZh);
+    const words = readKnownWordsStore();
+    const nextWords = words.filter((word) => word.normalized !== normalized);
+    writeKnownWordsStore(nextWords);
+    return { removed: nextWords.length !== words.length, words: nextWords };
   },
 });

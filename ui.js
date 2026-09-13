@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=frequency-priority-1";
+import { config } from "./config.js?v=learning-loop-1";
 
 const elements = {
   body: document.body,
@@ -26,6 +26,12 @@ const elements = {
   analysisGist: document.querySelector("#analysis-gist"),
   analysisTerms: document.querySelector("#analysis-terms"),
   analysisTermCount: document.querySelector("#analysis-term-count"),
+  wordHelp: document.querySelector("#word-help"),
+  wordHelpTerm: document.querySelector("#word-help-term"),
+  wordHelpPinyin: document.querySelector("#word-help-pinyin"),
+  wordHelpMeaning: document.querySelector("#word-help-meaning"),
+  wordHelpStatus: document.querySelector("#word-help-status"),
+  wordHelpClose: document.querySelector("#word-help-close"),
   sentenceTools: document.querySelector("#sentence-tools"),
   explainButton: document.querySelector("#explain-sentence"),
   selectionPreview: document.querySelector("#selection-preview"),
@@ -42,6 +48,20 @@ const elements = {
   vocabularyStatus: document.querySelector("#vocabulary-status"),
   vocabularyNotice: document.querySelector("#vocabulary-notice"),
   vocabularyList: document.querySelector("#vocabulary-list"),
+  reviewSummary: document.querySelector("#review-summary"),
+  reviewDueCount: document.querySelector("#review-due-count"),
+  reviewStart: document.querySelector("#review-start"),
+  reviewSession: document.querySelector("#review-session"),
+  reviewProgress: document.querySelector("#review-progress"),
+  reviewTerm: document.querySelector("#review-term"),
+  reviewContext: document.querySelector("#review-context"),
+  reviewReveal: document.querySelector("#review-reveal"),
+  reviewAnswer: document.querySelector("#review-answer"),
+  reviewPinyin: document.querySelector("#review-pinyin"),
+  reviewMeaning: document.querySelector("#review-meaning"),
+  reviewExit: document.querySelector("#review-exit"),
+  knownWords: document.querySelector("#known-words"),
+  knownWordsList: document.querySelector("#known-words-list"),
 };
 
 let lastArticleTrigger = null;
@@ -56,6 +76,24 @@ function createElement(tagName, className, text) {
   if (className) element.className = className;
   if (text !== undefined) element.textContent = text;
   return element;
+}
+
+function appendTappableText(parent, text, contextSentenceZh) {
+  const segments = typeof Intl.Segmenter === "function"
+    ? [...new Intl.Segmenter("zh", { granularity: "word" }).segment(text)]
+    : [...text].map((segment) => ({ segment, isWordLike: /[\p{Script=Han}]/u.test(segment) }));
+  segments.forEach(({ segment, isWordLike }) => {
+    if (!isWordLike || !/[\p{Script=Han}]/u.test(segment)) {
+      parent.append(document.createTextNode(segment));
+      return;
+    }
+    const token = createElement("button", "word-token", segment);
+    token.type = "button";
+    token.dataset.word = segment;
+    token.dataset.context = contextSentenceZh;
+    token.setAttribute("aria-label", `Explain ${segment}`);
+    parent.append(token);
+  });
 }
 
 function formatPublicationDate(value) {
@@ -209,7 +247,11 @@ export function renderArticle(article) {
   header.append(sourceLine, title, byline, original);
 
   const body = createElement("div", "reader__body");
-  article.paragraphs.forEach((text) => body.append(createElement("p", "", text)));
+  article.paragraphs.forEach((text) => {
+    const paragraph = createElement("p");
+    appendTappableText(paragraph, text, text);
+    body.append(paragraph);
+  });
 
   const publication = createElement("aside", "publication-note");
   publication.setAttribute("aria-label", `About ${article.sourceName || "this publication"}`);
@@ -236,6 +278,7 @@ export function renderArticle(article) {
   elements.languageTools.hidden = false;
   clearAnalysis(article);
   clearSentenceHelp();
+  clearWordHelp();
   elements.reader.focus();
 }
 
@@ -254,10 +297,10 @@ function appendHighlightedParagraph(paragraphElement, text, terms) {
     });
 
     if (!match) {
-      paragraphElement.append(document.createTextNode(text.slice(cursor)));
+      appendTappableText(paragraphElement, text.slice(cursor), text);
       break;
     }
-    if (match.position > cursor) paragraphElement.append(document.createTextNode(text.slice(cursor, match.position)));
+    if (match.position > cursor) appendTappableText(paragraphElement, text.slice(cursor, match.position), text);
 
     const highlight = createElement("button", "term-highlight", match.term.exactOccurrence);
     highlight.type = "button";
@@ -290,7 +333,11 @@ export function clearAnalysis(article = currentArticle) {
 
   if (article && currentReaderBody) {
     currentReaderBody.replaceChildren();
-    article.paragraphs.forEach((text) => currentReaderBody.append(createElement("p", "", text)));
+    article.paragraphs.forEach((text) => {
+      const paragraph = createElement("p");
+      appendTappableText(paragraph, text, text);
+      currentReaderBody.append(paragraph);
+    });
   }
 }
 
@@ -333,7 +380,13 @@ export function renderAnalysis(article, analysis) {
     saveButton.type = "button";
     saveButton.dataset.saveTermIndex = String(index);
     saveButton.setAttribute("aria-label", `Save ${term.termZh} to vocabulary`);
-    card.append(jumpButton, saveButton);
+    const knownButton = createElement("button", "term-card__known", "I know this");
+    knownButton.type = "button";
+    knownButton.dataset.knownTermIndex = String(index);
+    knownButton.setAttribute("aria-label", `Mark ${term.termZh} as known`);
+    const actions = createElement("div", "term-card__actions");
+    actions.append(saveButton, knownButton);
+    card.append(jumpButton, actions);
     termFragment.append(card);
   });
   elements.analysisTerms.replaceChildren(termFragment);
@@ -360,6 +413,38 @@ export function onTermSaveRequested(handler) {
     const term = currentAnalysis.terms[index];
     if (term) handler({ article: currentArticle, term, index });
   });
+}
+
+export function onKnownTermRequested(handler) {
+  elements.analysisTerms.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-known-term-index]");
+    if (!button || !currentAnalysis) return;
+    const index = Number(button.dataset.knownTermIndex);
+    const term = currentAnalysis.terms[index];
+    if (term) handler({ term, index });
+  });
+}
+
+export function setKnownTermBusy(index, isBusy) {
+  const button = elements.analysisTerms.querySelector(`button[data-known-term-index="${index}"]`);
+  if (!button) return;
+  const isKnown = button.classList.contains("term-card__known--known");
+  button.disabled = isBusy || isKnown;
+  button.textContent = isBusy ? "Updating…" : isKnown ? "Known ✓" : "I know this";
+}
+
+export function markKnownTerms(words, message = "") {
+  if (!currentAnalysis) return;
+  const known = new Set(words.map((word) => word.termZh.normalize("NFKC").trim().toLocaleLowerCase()));
+  currentAnalysis.terms.forEach((term, index) => {
+    const button = elements.analysisTerms.querySelector(`button[data-known-term-index="${index}"]`);
+    if (!button) return;
+    const isKnown = known.has(term.termZh.normalize("NFKC").trim().toLocaleLowerCase());
+    button.disabled = isKnown;
+    button.classList.toggle("term-card__known--known", isKnown);
+    button.textContent = isKnown ? "Known ✓" : "I know this";
+  });
+  if (message) elements.vocabularySaveStatus.textContent = message;
 }
 
 export function setTermSaveBusy(index, isBusy) {
@@ -440,6 +525,47 @@ export function onSentenceHelpRequested(handler) {
   elements.explainButton.addEventListener("click", () => handler(selectedSentence));
 }
 
+export function onWordHelpRequested(handler) {
+  elements.readerContent.addEventListener("click", (event) => {
+    const token = event.target.closest("button[data-word]");
+    if (!token || !currentArticle) return;
+    handler({ termZh: token.dataset.word, contextSentenceZh: token.dataset.context });
+  });
+}
+
+export function setWordHelpBusy(termZh, isBusy) {
+  elements.wordHelp.hidden = false;
+  elements.wordHelpTerm.textContent = termZh;
+  elements.wordHelpPinyin.textContent = "";
+  elements.wordHelpMeaning.textContent = "";
+  elements.wordHelpStatus.textContent = isBusy ? "Finding the meaning in this sentence…" : "";
+}
+
+export function renderWordHelp(word) {
+  elements.wordHelp.hidden = false;
+  elements.wordHelpTerm.textContent = word.termZh;
+  elements.wordHelpPinyin.textContent = word.pinyin;
+  elements.wordHelpMeaning.textContent = word.meaningEn;
+  elements.wordHelpStatus.textContent = "";
+  elements.wordHelp.focus?.();
+}
+
+export function showWordHelpError(message) {
+  elements.wordHelp.hidden = false;
+  elements.wordHelpMeaning.textContent = message;
+  elements.wordHelpStatus.textContent = "";
+}
+
+export function clearWordHelp() {
+  elements.wordHelp.hidden = true;
+  elements.wordHelpTerm.textContent = "";
+  elements.wordHelpPinyin.textContent = "";
+  elements.wordHelpMeaning.textContent = "";
+  elements.wordHelpStatus.textContent = "";
+}
+
+elements.wordHelpClose.addEventListener("click", clearWordHelp);
+
 export function clearReader() {
   elements.reader.hidden = true;
   elements.readerContent.replaceChildren();
@@ -486,6 +612,39 @@ export function onVocabularyRemoveRequested(handler) {
   elements.vocabularyList.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-vocabulary-id]");
     if (button) handler(button.dataset.vocabularyId);
+  });
+}
+
+export function onVocabularyKnownRequested(handler) {
+  elements.vocabularyList.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-vocabulary-known]");
+    if (button) handler(button.dataset.vocabularyKnown);
+  });
+}
+
+export function onKnownWordRestoreRequested(handler) {
+  elements.knownWordsList.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-restore-known]");
+    if (button) handler(button.dataset.restoreKnown);
+  });
+}
+
+export function onReviewStart(handler) {
+  elements.reviewStart.addEventListener("click", handler);
+}
+
+export function onReviewExit(handler) {
+  elements.reviewExit.addEventListener("click", handler);
+}
+
+export function onReviewReveal(handler) {
+  elements.reviewReveal.addEventListener("click", handler);
+}
+
+export function onReviewRated(handler) {
+  elements.reviewAnswer.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-review-rating]");
+    if (button) handler(button.dataset.reviewRating);
   });
 }
 
@@ -539,6 +698,48 @@ export function setVocabularyRemoveBusy(id, isBusy) {
   button.textContent = isBusy ? "Removing…" : "Remove";
 }
 
+export function renderReviewSummary(records) {
+  const count = records.length;
+  elements.reviewDueCount.textContent = String(count);
+  elements.reviewStart.disabled = count === 0;
+  elements.reviewStart.textContent = count ? `Review ${count}` : "Nothing due";
+}
+
+export function renderReviewCard(record, position, total) {
+  elements.reviewSummary.hidden = true;
+  elements.vocabularyList.hidden = true;
+  elements.knownWords.hidden = true;
+  elements.vocabularyStatus.hidden = true;
+  elements.reviewSession.hidden = false;
+  elements.reviewProgress.textContent = `Review ${position} of ${total}`;
+  elements.reviewTerm.textContent = record.termZh;
+  elements.reviewContext.textContent = record.contextSentenceZh;
+  elements.reviewPinyin.textContent = record.pinyin;
+  elements.reviewMeaning.textContent = record.meaningEn;
+  elements.reviewAnswer.hidden = true;
+  elements.reviewReveal.hidden = false;
+  elements.reviewSession.focus();
+}
+
+export function revealReviewAnswer() {
+  elements.reviewAnswer.hidden = false;
+  elements.reviewReveal.hidden = true;
+  elements.reviewAnswer.querySelector("button")?.focus();
+}
+
+export function setReviewBusy(isBusy) {
+  elements.reviewAnswer.querySelectorAll("button").forEach((button) => { button.disabled = isBusy; });
+}
+
+export function hideReviewSession(message = "") {
+  elements.reviewSession.hidden = true;
+  elements.reviewSummary.hidden = false;
+  elements.vocabularyList.hidden = false;
+  elements.knownWords.hidden = false;
+  elements.vocabularyStatus.hidden = false;
+  if (message) elements.vocabularyStatus.textContent = message;
+}
+
 export function setVocabularyCount(count) {
   elements.vocabularyCount.textContent = String(count);
   elements.vocabularyCount.setAttribute("aria-label", `${count} saved ${count === 1 ? "term" : "terms"}`);
@@ -585,12 +786,32 @@ export function renderVocabulary(records) {
     remove.type = "button";
     remove.dataset.vocabularyId = record.id;
     remove.setAttribute("aria-label", `Remove ${record.termZh || "this term"} from saved vocabulary`);
-    actions.append(original, remove);
+    const known = createElement("button", "text-button vocabulary-card__known", "I know this");
+    known.type = "button";
+    known.dataset.vocabularyKnown = record.termZh;
+    known.setAttribute("aria-label", `Mark ${record.termZh || "this term"} as known`);
+    actions.append(original, known, remove);
     card.append(heading, meaning, context, articleTitle, metadata, actions);
     fragment.append(card);
   });
   elements.vocabularyList.replaceChildren(fragment);
   elements.vocabularyStatus.textContent = `${records.length} saved ${records.length === 1 ? "term" : "terms"}.`;
+}
+
+export function renderKnownWords(words) {
+  const fragment = document.createDocumentFragment();
+  words.forEach((word) => {
+    const row = createElement("div", "known-word");
+    row.append(createElement("span", "", word.termZh));
+    const restore = createElement("button", "text-button", "Restore");
+    restore.type = "button";
+    restore.dataset.restoreKnown = word.termZh;
+    restore.setAttribute("aria-label", `Allow ${word.termZh} in future language guides`);
+    row.append(restore);
+    fragment.append(row);
+  });
+  elements.knownWordsList.replaceChildren(fragment);
+  elements.knownWords.hidden = words.length === 0;
 }
 
 elements.analysisTerms.addEventListener("click", (event) => {

@@ -165,11 +165,15 @@ export function validateAnalysisOutput(value, article, expectedTermCount = 10, k
     if (!rawTerm || typeof rawTerm !== "object") {
       throw new PublicError("MODEL_OUTPUT_INVALID", "The language guide contained an invalid term. Please retry.", 502);
     }
+    const termZh = validateModelString(rawTerm.termZh, "Term", 24);
+    // The model may occasionally put a full clause in exactOccurrence even
+    // when termZh is a proper vocabulary item. Highlight only that item.
+    validateModelString(rawTerm.exactOccurrence, "Occurrence", 80);
     const term = {
-      termZh: validateModelString(rawTerm.termZh, "Term", 80),
+      termZh,
       pinyin: validateModelString(rawTerm.pinyin, "Pinyin", 160),
       meaningEn: validateModelString(rawTerm.meaningEn, "Meaning", 300),
-      exactOccurrence: validateModelString(rawTerm.exactOccurrence, "Occurrence", 80),
+      exactOccurrence: termZh,
       contextSentenceZh: validateModelString(rawTerm.contextSentenceZh, "Context", 600),
     };
     const identity = normalized(term.termZh).toLocaleLowerCase();
@@ -182,9 +186,8 @@ export function validateAnalysisOutput(value, article, expectedTermCount = 10, k
     seen.add(identity);
     if (
       !article.bodyText.includes(term.termZh)
-      || !article.bodyText.includes(term.exactOccurrence)
       || !article.bodyText.includes(term.contextSentenceZh)
-      || !term.contextSentenceZh.includes(term.exactOccurrence)
+      || !term.contextSentenceZh.includes(term.termZh)
     ) {
       throw new PublicError("MODEL_OUTPUT_UNGROUNDED", "The language guide could not be verified against the article. Please retry.", 502);
     }

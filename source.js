@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=anchored-word-help-2";
+import { config } from "./config.js?v=word-only-highlights-1";
 
 let sampleCache;
 

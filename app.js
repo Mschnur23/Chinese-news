@@ -1,5 +1,5 @@
-import { config } from "./config.js?v=anchored-word-help-2";
-import { source } from "./source.js?v=anchored-word-help-2";
+import { config } from "./config.js?v=word-only-highlights-1";
+import { source } from "./source.js?v=word-only-highlights-1";
 import {
   clearResults,
   clearReader,
@@ -63,7 +63,7 @@ import {
   showSentenceHelpError,
   showWordHelpError,
   revealReviewAnswer,
-} from "./ui.js?v=anchored-word-help-2";
+} from "./ui.js?v=word-only-highlights-1";
 
 let currentArticle = null;
 let articleRequestVersion = 0;

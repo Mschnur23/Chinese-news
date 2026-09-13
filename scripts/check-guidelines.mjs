@@ -177,9 +177,17 @@ const applicationTerm = sampleTerms.find((term) => term.termZh === "应用");
 const unsortedByFrequency = [...sampleTerms.filter((term) => term !== applicationTerm), applicationTerm];
 const frequencyPrioritized = language.validateAnalysisOutput({ ...validationAnalysis, terms: unsortedByFrequency }, validationArticle, 20);
 check(frequencyPrioritized.terms[0].termZh === "应用", "Server validation must order a repeated grounded term ahead of one-occurrence terms");
+const sentenceOccurrenceTerms = sampleTerms.map((term, index) => index === 0
+  ? { ...term, exactOccurrence: term.contextSentenceZh }
+  : term);
+const wordOnlyAnalysis = language.validateAnalysisOutput({ ...validationAnalysis, terms: sentenceOccurrenceTerms }, validationArticle, 20);
+check(wordOnlyAnalysis.terms.every((term) => term.exactOccurrence === term.termZh), "Server validation must reduce every highlight occurrence to the vocabulary term itself");
 const analyzeEndpoint = await text("api/analyze.js");
 check(analyzeEndpoint.includes("Return terms in descending occurrence frequency"), "The analysis prompt must instruct the model to order terms by occurrence frequency");
 check(analyzeEndpoint.includes("Never select an easy function word merely because it is frequent"), "The analysis prompt must prevent frequency from promoting easy function words");
+check(analyzeEndpoint.includes("never a sentence or clause"), "The analysis prompt must prohibit sentence-length vocabulary highlights");
+const uiSource = await text("ui.js");
+check(uiSource.includes("exactOccurrence: term.termZh"), "The renderer must defensively highlight only the vocabulary term");
 let mismatchedTermCountRejected = false;
 try {
   language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.slice(0, 10) }, validationArticle, 20);

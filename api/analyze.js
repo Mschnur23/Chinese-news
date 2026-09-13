@@ -17,7 +17,7 @@ Return only the requested structured output. Preserve the supplied article ID ex
 Write exactly two concise English gist sentences grounded only in the article.
 Choose exactly the requested number of unique Chinese words or phrases that are useful at the learner's level.
 Among level-appropriate difficult or useful candidates, prioritize terms with more exact occurrences in the article. Return terms in descending occurrence frequency; for ties, put the harder or more contextually useful term first. Never select an easy function word merely because it is frequent.
-For each term, copy termZh, exactOccurrence, and the complete containing contextSentenceZh verbatim from the article.
+For each term, termZh must be one vocabulary word or short lexical phrase, never a sentence or clause. Set exactOccurrence to exactly the same text as termZh. Copy both verbatim from the article, then copy the complete containing sentence into contextSentenceZh.
 Give tone-marked pinyin and a concise English meaning specific to that sentence.
 Do not translate the full article or add outside facts.`;
 

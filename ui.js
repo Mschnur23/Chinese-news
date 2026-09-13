@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=anchored-word-help-2";
+import { config } from "./config.js?v=word-only-highlights-1";
 
 const elements = {
   body: document.body,
@@ -353,7 +353,10 @@ export function renderArticle(article) {
 }
 
 function appendHighlightedParagraph(paragraphElement, text, terms) {
-  const orderedTerms = terms.map((term, index) => ({ ...term, index }));
+  // Render only the vocabulary unit itself. The server enforces this too, but
+  // keeping the renderer defensive prevents a malformed response from ever
+  // turning a context sentence into one large highlight.
+  const orderedTerms = terms.map((term, index) => ({ ...term, exactOccurrence: term.termZh, index }));
   let cursor = 0;
 
   while (cursor < text.length) {

@@ -8,7 +8,7 @@ export const serverConfig = Object.freeze({
   maximumModelRequestBytes: 90000,
   modelRequestTimeoutMs: 40000,
   openAIEndpoint: "https://api.openai.com/v1/responses",
-  openAIModel: process.env.OPENAI_MODEL || "gpt-5.4-mini",
+  openAIModel: process.env.OPENAI_MODEL || "gpt-5-mini",
   candidateLimitPerSource: 10,
   displayedResultLimit: 5,
   userAgent: "DailyChineseRead/0.1 (+personal-learning-reader)",

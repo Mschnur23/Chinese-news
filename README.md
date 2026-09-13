@@ -20,10 +20,10 @@ Phase 2 uses the OpenAI Responses API with Structured Outputs. Add these server-
 
 ```sh
 OPENAI_API_KEY=your_server_side_key
-OPENAI_MODEL=gpt-5.4-mini
+OPENAI_MODEL=gpt-5-mini
 ```
 
-`OPENAI_MODEL` is optional and defaults to `gpt-5.4-mini`. `.env.local` is ignored by Git.
+`OPENAI_MODEL` is optional and defaults to `gpt-5-mini`. Use `gpt-5-nano` only for simple repetitive work such as classification, extraction, tagging, or basic summarization; Phase 2's contextual language analysis defaults to `gpt-5-mini`. `.env.local` is ignored by Git.
 Copy `.env.example` to `.env.local` for local development, then add the real key only to `.env.local` and the Vercel project environment.
 
 Discovery continues to use a transparent interest, recency, and topic heuristic. The model sees only the selected retrieved article, learner level, and bounded interests. Model output is checked server-side before it reaches the reader.

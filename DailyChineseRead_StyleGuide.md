@@ -2,14 +2,15 @@
 
 ## Overall Visual Direction
 
-- Clean, premium, mobile-first news-reader aesthetic.
-- Predominantly white or very light warm-gray background.
-- Strong black Chinese headlines.
-- Muted gray metadata.
-- One restrained electric-blue accent.
+- Sophisticated, mobile-first Chinese editorial publication with a subtle learning layer.
+- Warm ivory paper and softly contrasting editorial surfaces.
+- Ink-black Chinese headlines set in a Song/Ming-style serif stack.
+- Muted umber-gray metadata.
+- One restrained rust-red accent, with muted green reserved for success.
 - Rounded article cards with subtle borders and shadows.
 - Generous whitespace.
-- Should feel closer to Apple News or a modern editorial reading app than a SaaS dashboard.
+- Draw on Noema for atmosphere and expressive English display type, and Initium Media for Chinese hierarchy and long-form rhythm.
+- The result should feel like an independent magazine, not a SaaS dashboard or gamified language app.
 - Avoid gradients, neon, glassmorphism, giant AI icons, chat bubbles, or obvious “AI-generated” visual tropes.
 
 ## Color System
@@ -18,18 +19,18 @@ Use CSS custom properties so the visual system stays consistent and easy to tune
 
 ```css
 :root {
-  --bg: #F7F8FA;
-  --surface: #FFFFFF;
-  --text-primary: #111318;
-  --text-secondary: #727986;
-  --border: #E8EAF0;
+  --bg: #F2EDE3;
+  --surface: #FBF8F0;
+  --text-primary: #1B1916;
+  --text-secondary: #746E64;
+  --border: #D9D1C4;
 
-  --accent: #1769FF;
-  --accent-soft: #EEF4FF;
+  --accent: #A53F2B;
+  --accent-soft: #F1DFD5;
 
-  --tag-bg: #F2F4F7;
-  --saved: #17A673;
-  --error: #D94A4A;
+  --tag-bg: #E8E1D6;
+  --saved: #39634F;
+  --error: #9F302C;
 }
 ```
 
@@ -37,35 +38,49 @@ Use CSS custom properties so the visual system stays consistent and easy to tune
 
 Use system fonts only. Do not add a font dependency.
 
-### Primary Sans-Serif Stack
+### Interface Sans-Serif Stack
 
 ```css
 font-family:
-  -apple-system,
-  BlinkMacSystemFont,
+  "Avenir Next",
+  "Helvetica Neue",
   "PingFang SC",
   "Hiragino Sans GB",
   "Microsoft YaHei",
   sans-serif;
 ```
 
-### Optional Editorial Serif for Product Name
+### English Editorial Display Stack
 
 ```css
-font-family: Georgia, "Times New Roman", serif;
+font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+```
+
+### Chinese Editorial Reading Stack
+
+```css
+font-family:
+  "Songti SC",
+  STSong,
+  "Noto Serif CJK SC",
+  "Source Han Serif SC",
+  SimSun,
+  Georgia,
+  serif;
 ```
 
 Recommended use:
 
-- Product name: serif/editorial style.
+- Product name and English display copy: expressive editorial serif.
 - Navigation, cards, metadata, controls: sans-serif.
-- Chinese article body: sans-serif with high readability.
+- Chinese headlines, article body, vocabulary terms, and original sentences: Song/Ming-style editorial serif.
+- Keep English helper copy visually secondary to the Chinese reading experience.
 
 ### Reading Typography
 
 - Mobile article text: roughly 18–20px.
 - Desktop article text: roughly 20–22px.
-- Line height: around 1.8.
+- Line height: around 1.9–2.0 for Chinese long-form reading.
 - Generous paragraph spacing.
 - Avoid dense text blocks.
 
@@ -152,7 +167,7 @@ Suggested top structure:
 
 ### English Gist
 
-Show a small light-blue card near the top.
+Show a small warm-tint card near the top.
 
 Example:
 
@@ -212,8 +227,8 @@ Unhighlighted Chinese words may use a quiet hover/focus treatment to signal cont
 
 Recommended treatment:
 
-- Very pale blue background.
-- Slightly darker blue text.
+- Very pale rust-tint background.
+- Dark rust text.
 - Small radius.
 - Optional subtle underline.
 
@@ -248,7 +263,7 @@ Style:
 - White floating card.
 - Compact width.
 - Subtle border and shadow.
-- Blue save action.
+- Rust-red save action.
 - No full-screen modal unless required on very small screens.
 
 ## Sentence Help
@@ -372,7 +387,7 @@ Not:
 
 ## Phase 3 Visual / UX Acceptance Checklist
 
-- [ ] Home screen follows the clean white/blue editorial visual direction.
+- [ ] Home screen follows the warm ivory, ink, and rust editorial direction.
 - [ ] Article cards use consistent image, headline, metadata, and tag styling.
 - [ ] Mobile layout works cleanly at 375px width.
 - [ ] Desktop content remains centered and readable.
@@ -391,9 +406,9 @@ Use the Daily Chinese Read mockups as the visual reference. Reproduce their visu
 
 Prioritize:
 
-- clean white background,
-- restrained electric-blue accent,
-- editorial typography,
+- warm ivory paper,
+- restrained rust-red accent,
+- expressive English display type and Song/Ming Chinese reading type,
 - compact article cards,
 - subtle category pills,
 - generous whitespace,

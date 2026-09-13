@@ -1,5 +1,5 @@
-import { config } from "./config.js?v=brief-bottom-1";
-import { source } from "./source.js?v=brief-bottom-1";
+import { config } from "./config.js?v=optional-description-1";
+import { source } from "./source.js?v=optional-description-1";
 import {
   clearResults,
   clearReader,
@@ -63,7 +63,7 @@ import {
   showSentenceHelpError,
   showWordHelpError,
   revealReviewAnswer,
-} from "./ui.js?v=brief-bottom-1";
+} from "./ui.js?v=optional-description-1";
 
 let currentArticle = null;
 let articleRequestVersion = 0;

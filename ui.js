@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=brief-bottom-1";
+import { config } from "./config.js?v=optional-description-1";
 
 const elements = {
   body: document.body,
@@ -177,7 +177,9 @@ export function renderList(items) {
     openButton.setAttribute("aria-label", `Read ${item.titleZh || "this article"}`);
     title.append(openButton);
     const topic = createElement("span", "topic-pill", item.topic || "Topic unavailable");
-    const description = createElement("p", "article-card__description", item.description || "No description is available.");
+    const description = item.description
+      ? createElement("p", "article-card__description", item.description)
+      : null;
 
     const reasons = createElement("dl", "article-card__reasons");
     const matterTerm = createElement("dt", "", "Why it matters");

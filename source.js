@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=brief-bottom-1";
+import { config } from "./config.js?v=optional-description-1";
 
 let sampleCache;
 

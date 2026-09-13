@@ -84,8 +84,8 @@
       "The transition depends on whether businesses can improve operations while managing data, talent, and return-on-investment constraints."
     ],
     "terms": [
-      { "termZh": "规模化", "pinyin": "guīmóhuà", "meaningEn": "at scale", "exactOccurrence": "规模化", "contextSentenceZh": "人工智能产业正在从技术探索走向规模化应用。" },
       { "termZh": "应用", "pinyin": "yìngyòng", "meaningEn": "application or deployment", "exactOccurrence": "应用", "contextSentenceZh": "人工智能产业正在从技术探索走向规模化应用。" },
+      { "termZh": "规模化", "pinyin": "guīmóhuà", "meaningEn": "at scale", "exactOccurrence": "规模化", "contextSentenceZh": "人工智能产业正在从技术探索走向规模化应用。" },
       { "termZh": "生产流程", "pinyin": "shēngchǎn liúchéng", "meaningEn": "production process", "exactOccurrence": "生产流程", "contextSentenceZh": "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。" },
       { "termZh": "可持续", "pinyin": "kě chíxù", "meaningEn": "sustainable", "exactOccurrence": "可持续", "contextSentenceZh": "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。" },
       { "termZh": "商业价值", "pinyin": "shāngyè jiàzhí", "meaningEn": "commercial value", "exactOccurrence": "商业价值", "contextSentenceZh": "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。" },

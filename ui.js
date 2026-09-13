@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=level-vocabulary-2";
+import { config } from "./config.js?v=frequency-priority-1";
 
 const elements = {
   body: document.body,
@@ -240,9 +240,7 @@ export function renderArticle(article) {
 }
 
 function appendHighlightedParagraph(paragraphElement, text, terms) {
-  const orderedTerms = terms
-    .map((term, index) => ({ ...term, index }))
-    .sort((left, right) => right.exactOccurrence.length - left.exactOccurrence.length);
+  const orderedTerms = terms.map((term, index) => ({ ...term, index }));
   let cursor = 0;
 
   while (cursor < text.length) {
@@ -250,7 +248,7 @@ function appendHighlightedParagraph(paragraphElement, text, terms) {
     orderedTerms.forEach((term) => {
       const position = text.indexOf(term.exactOccurrence, cursor);
       if (position < 0) return;
-      if (!match || position < match.position || (position === match.position && term.exactOccurrence.length > match.term.exactOccurrence.length)) {
+      if (!match || position < match.position) {
         match = { position, term };
       }
     });

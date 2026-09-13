@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=level-vocabulary-2";
+import { config } from "./config.js?v=frequency-priority-1";
 
 let sampleCache;
 

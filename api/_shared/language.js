@@ -20,6 +20,10 @@ function normalized(value) {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function occurrenceCount(text, occurrence) {
+  return text.split(occurrence).length - 1;
+}
+
 export function parseJsonRequest(request) {
   const contentType = String(request.headers?.["content-type"] || "").toLowerCase();
   if (!contentType.startsWith("application/json")) {
@@ -174,7 +178,12 @@ export function validateAnalysisOutput(value, article, expectedTermCount = 10) {
     return term;
   });
 
-  return { articleId: article.id, gistEn, terms };
+  const prioritizedTerms = terms
+    .map((term, priority) => ({ term, priority, frequency: occurrenceCount(article.bodyText, term.exactOccurrence) }))
+    .sort((left, right) => right.frequency - left.frequency || left.priority - right.priority)
+    .map(({ term }) => term);
+
+  return { articleId: article.id, gistEn, terms: prioritizedTerms };
 }
 
 export function validateExplanationOutput(value, sentenceZh) {

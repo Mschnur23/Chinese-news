@@ -59,6 +59,8 @@ This file records the interfaces that later phases must preserve. All documented
 
 `gistEn` contains exactly two non-empty sentences. `terms` contains exactly 20 unique entries for `Intermediate` and exactly 10 for `Advanced`. Every `termZh`, `exactOccurrence`, and `contextSentenceZh` must be present in the selected article.
 
+The model selects only level-appropriate difficult or useful candidates, then orders them by descending exact-occurrence frequency. Frequency must not promote easy function words. Equal-frequency terms remain in the model's difficulty/usefulness priority order. The server verifies grounding and normalizes the final frequency ordering before returning the analysis.
+
 ### Sentence explanation
 
 ```js

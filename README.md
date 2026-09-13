@@ -3,6 +3,7 @@
 A focused reading workspace for intermediate-to-advanced Mandarin learners. The current checkpoint is **Phase 3 — personal vocabulary** with live public retrieval from 澎湃新闻, 证券时报, and 界面新闻, grounded language support, and a contextual vocabulary list that persists in the current browser.
 
 Language guides return exactly 20 grounded vocabulary terms for Intermediate readers and exactly 10 for Advanced readers.
+Within the level-appropriate difficult/useful candidates, repeated terms are prioritized by exact-occurrence frequency; difficulty and contextual usefulness break ties, and easy function words are never selected for frequency alone.
 
 ## Run locally
 

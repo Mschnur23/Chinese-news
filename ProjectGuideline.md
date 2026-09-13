@@ -123,6 +123,7 @@ Turn the selected native article into a level-appropriate reading experience whi
 #### Grounding rules
 
 - Every selected term and quoted context must be verifiably present in the retrieved article text.
+- Among level-appropriate difficult or useful candidates, prioritize repeated terms by exact-occurrence frequency; use difficulty or contextual usefulness as the tie-breaker, and never promote easy function words based on frequency alone.
 - Definitions and explanations must reflect the term's meaning in that sentence, not merely its most common dictionary meaning.
 - The gist must summarize only the retrieved article and must not add unsupported facts.
 - Model output is interpretation, not source text; keep the visual distinction clear.

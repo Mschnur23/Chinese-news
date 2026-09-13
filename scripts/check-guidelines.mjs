@@ -143,6 +143,13 @@ const validationArticle = { ...sampleArticle, id: "the-paper:123" };
 const validationAnalysis = { ...sample.articleAnalysis, articleId: validationArticle.id };
 check(language.validateAnalysisOutput(validationAnalysis, validationArticle, 20).terms.length === 20, "Intermediate validator must accept exactly 20 grounded terms");
 check(language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.slice(0, 10) }, validationArticle, 10).terms.length === 10, "Advanced validator must accept exactly 10 grounded terms");
+const applicationTerm = sampleTerms.find((term) => term.termZh === "应用");
+const unsortedByFrequency = [...sampleTerms.filter((term) => term !== applicationTerm), applicationTerm];
+const frequencyPrioritized = language.validateAnalysisOutput({ ...validationAnalysis, terms: unsortedByFrequency }, validationArticle, 20);
+check(frequencyPrioritized.terms[0].termZh === "应用", "Server validation must order a repeated grounded term ahead of one-occurrence terms");
+const analyzeEndpoint = await text("api/analyze.js");
+check(analyzeEndpoint.includes("Return terms in descending occurrence frequency"), "The analysis prompt must instruct the model to order terms by occurrence frequency");
+check(analyzeEndpoint.includes("Never select an easy function word merely because it is frequent"), "The analysis prompt must prevent frequency from promoting easy function words");
 let mismatchedTermCountRejected = false;
 try {
   language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.slice(0, 10) }, validationArticle, 20);

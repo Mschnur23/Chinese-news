@@ -40,6 +40,7 @@ Run this list after every phase. Record failures; never remove a previously pass
 36. Saving a selected term immediately marks it saved, increments the count, and stores every `VocabularyRecord` field. *(Phase 3)*
 37. Saving the same normalized term, article, and context twice leaves one stored row. *(Phase 3)*
 38. Saved terms survive refresh, render with their contextual sentence and article link, and can be revisited from either the list or reader. *(Phase 3)*
-39. Removing one saved term preserves every other record and returns the removed term’s Save action to its available state. *(Phase 3)*
-40. Invalid JSON, unknown versions, malformed records, duplicate stored IDs, and unavailable storage show a recoverable error without overwriting existing data. *(Phase 3)*
-41. The interface follows `DailyChineseRead_StyleGuide.md`: warm-gray canvas, white rounded feed cards, restrained blue accents, readable 18–22 px article text, centered content widths, and a two-destination mobile navigation without gradients or decorative animation. *(Style guide)*
+39. Among level-appropriate vocabulary candidates, repeated terms are ordered ahead of rarer terms; frequency never promotes easy function words by itself, and overlapping highlights respect this priority.
+40. Removing one saved term preserves every other record and returns the removed term’s Save action to its available state. *(Phase 3)*
+41. Invalid JSON, unknown versions, malformed records, duplicate stored IDs, and unavailable storage show a recoverable error without overwriting existing data. *(Phase 3)*
+42. The interface follows `DailyChineseRead_StyleGuide.md`: warm-gray canvas, white rounded feed cards, restrained blue accents, readable 18–22 px article text, centered content widths, and a two-destination mobile navigation without gradients or decorative animation. *(Style guide)*

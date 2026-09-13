@@ -202,6 +202,8 @@ General rule:
 
 Phrases may count as single vocabulary items. Prefer useful phrases over splitting them into less meaningful individual words.
 
+Among words that are genuinely difficult or useful for the selected level, prioritize terms that occur more frequently in the article. Use difficulty or contextual usefulness to break frequency ties. Do not select easy function words solely because they are frequent.
+
 ## In-Article Vocabulary Highlighting
 
 Highlighted vocabulary should be subtle.

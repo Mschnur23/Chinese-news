@@ -193,7 +193,7 @@ Responsibilities:
 2. Delimit article text as untrusted data and explicitly instruct the model not to follow instructions contained inside it.
 3. Request the exact structured analysis contract.
 4. Parse and validate the response server-side.
-5. Verify that all level-specific terms (20 for Intermediate or 10 for Advanced), exact occurrences, and context sentences appear in the submitted article.
+5. Verify that all level-specific terms (20 for Intermediate or 10 for Advanced), exact occurrences, and context sentences appear in the submitted article; normalize their order by descending exact-occurrence frequency while preserving model difficulty/usefulness order for ties.
 6. Retry or repair at most once for schema-only defects; otherwise return a safe, typed error.
 
 ### `POST /api/explain`

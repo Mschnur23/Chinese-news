@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=optional-description-1";
+import { config } from "./config.js?v=high-resolution-images-1";
 
 const elements = {
   body: document.body,

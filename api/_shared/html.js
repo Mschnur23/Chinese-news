@@ -51,12 +51,29 @@ export function normalizeImageUrl(value = "", baseUrl = "") {
   const candidate = decodeHtml(value).trim().split(/\s+/)[0];
   if (!candidate || candidate.startsWith("data:")) return "";
   try {
-    const url = new URL(candidate, baseUrl);
+    const url = baseUrl ? new URL(candidate, baseUrl) : new URL(candidate);
     if (url.protocol !== "https:") return "";
+    // Publisher feeds often attach a small Alibaba OSS thumbnail transform.
+    // Request the original asset so cards remain sharp on high-density screens.
+    if (url.searchParams.has("x-oss-process")) {
+      url.searchParams.delete("x-oss-process");
+    }
     return url.href;
   } catch {
     return "";
   }
+}
+
+function largestSrcsetUrl(value = "") {
+  let best = { score: 0, url: "" };
+  for (const entry of value.split(",")) {
+    const [url, descriptor = "1x"] = entry.trim().split(/\s+/);
+    const width = descriptor.match(/^(\d+)w$/)?.[1];
+    const density = descriptor.match(/^(\d+(?:\.\d+)?)x$/)?.[1];
+    const score = width ? Number(width) : density ? Number(density) * 1000 : 1;
+    if (url && score >= best.score) best = { score, url };
+  }
+  return best.url;
 }
 
 export function extractMetadataImageUrl(fragment = "", baseUrl = "") {
@@ -76,6 +93,8 @@ export function extractImageUrl(fragment = "", baseUrl = "") {
   const metadataImage = extractMetadataImageUrl(fragment, baseUrl);
   if (metadataImage) return metadataImage;
   const candidates = [
+    largestSrcsetUrl(fragment.match(/<img\b[^>]*data-srcset=["']([^"']+)["']/i)?.[1]),
+    largestSrcsetUrl(fragment.match(/<img\b[^>]*srcset=["']([^"']+)["']/i)?.[1]),
     fragment.match(/<img\b[^>]*data-src=["']([^"']+)["']/i)?.[1],
     fragment.match(/<img\b[^>]*data-original=["']([^"']+)["']/i)?.[1],
     fragment.match(/<img\b[^>]*src=["']([^"']+)["']/i)?.[1],

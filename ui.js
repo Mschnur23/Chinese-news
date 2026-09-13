@@ -7,6 +7,8 @@ const elements = {
   notice: document.querySelector("#notice"),
   results: document.querySelector("#article-list"),
   resultCount: document.querySelector("#result-count"),
+  homeIntro: document.querySelector("#home-intro"),
+  homeControls: document.querySelector("#reading-controls"),
   listSection: document.querySelector("#reading-list"),
   reader: document.querySelector("#reader"),
   readerBack: document.querySelector("#reader-back"),
@@ -28,6 +30,8 @@ const elements = {
   sentenceError: document.querySelector("#sentence-error"),
   sentenceResult: document.querySelector("#sentence-result"),
   vocabularyOpen: document.querySelector("#open-vocabulary"),
+  mobileHome: document.querySelector("#mobile-home"),
+  mobileVocabulary: document.querySelector("#mobile-vocabulary"),
   vocabularyCount: document.querySelector("#vocabulary-count"),
   vocabularySaveStatus: document.querySelector("#vocabulary-save-status"),
   vocabulary: document.querySelector("#vocabulary"),
@@ -168,6 +172,8 @@ export function setPreviewControlsVisible(isVisible) {
 
 export function setArticleBusy(isBusy) {
   elements.reader.hidden = false;
+  elements.homeIntro.hidden = true;
+  elements.homeControls.hidden = true;
   elements.reader.setAttribute("aria-busy", String(isBusy));
   elements.readerStatus.textContent = isBusy ? "正在提取干净正文…" : "";
   elements.readerBack.disabled = isBusy;
@@ -217,7 +223,7 @@ export function renderArticle(article) {
   publicationLink.rel = "noopener noreferrer";
   publication.append(publicationKicker, publicationName, publicationDescription, publicationLink);
 
-  elements.readerContent.replaceChildren(header, body, publication);
+  elements.readerContent.replaceChildren(header, elements.languageTools, body, publication);
   currentReaderBody = body;
   currentArticle = article;
   currentAnalysis = null;
@@ -436,6 +442,8 @@ export function clearReader() {
   elements.readerContent.replaceChildren();
   elements.readerError.hidden = true;
   elements.listSection.hidden = false;
+  elements.homeIntro.hidden = false;
+  elements.homeControls.hidden = false;
   elements.languageTools.hidden = true;
   currentReaderBody = null;
   currentArticle = null;
@@ -460,6 +468,11 @@ export function onReaderBack(handler) {
 
 export function onVocabularyRequested(handler) {
   elements.vocabularyOpen.addEventListener("click", handler);
+  elements.mobileVocabulary.addEventListener("click", handler);
+}
+
+export function onHomeRequested(handler) {
+  elements.mobileHome.addEventListener("click", handler);
 }
 
 export function onVocabularyBack(handler) {
@@ -477,18 +490,28 @@ export function showVocabularyView() {
   vocabularyReturnView = elements.reader.hidden ? "list" : "reader";
   elements.listSection.hidden = true;
   elements.reader.hidden = true;
+  elements.homeIntro.hidden = true;
+  elements.homeControls.hidden = true;
   elements.vocabulary.hidden = false;
   elements.vocabularyOpen.setAttribute("aria-expanded", "true");
+  elements.mobileVocabulary.setAttribute("aria-current", "page");
+  elements.mobileHome.removeAttribute("aria-current");
   elements.vocabulary.focus();
 }
 
 export function hideVocabularyView() {
   elements.vocabulary.hidden = true;
   elements.vocabularyOpen.setAttribute("aria-expanded", "false");
+  elements.mobileVocabulary.removeAttribute("aria-current");
+  elements.mobileHome.setAttribute("aria-current", "page");
   if (vocabularyReturnView === "reader" && currentArticle) {
     elements.reader.hidden = false;
+    elements.homeIntro.hidden = true;
+    elements.homeControls.hidden = true;
   } else {
     elements.listSection.hidden = false;
+    elements.homeIntro.hidden = false;
+    elements.homeControls.hidden = false;
   }
   elements.vocabularyOpen.focus();
 }
@@ -496,6 +519,7 @@ export function hideVocabularyView() {
 export function setVocabularyBusy(isBusy) {
   elements.vocabulary.setAttribute("aria-busy", String(isBusy));
   elements.vocabularyOpen.disabled = isBusy;
+  elements.mobileVocabulary.disabled = isBusy;
   elements.vocabularyBack.disabled = isBusy;
   if (isBusy) {
     elements.vocabularyStatus.textContent = "Loading saved vocabulary…";

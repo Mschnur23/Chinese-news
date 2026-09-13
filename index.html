@@ -15,26 +15,29 @@
     <header class="site-header">
       <a class="wordmark" href="./" aria-label="Daily Chinese Read home">
         <span class="wordmark__mark" aria-hidden="true">读</span>
-        <span>Daily Chinese Read</span>
+        <span class="wordmark__copy">
+          <strong>Daily Chinese Read</strong>
+          <small>Real stories. Real Chinese. A sharper you.</small>
+        </span>
       </a>
       <div class="header-actions">
         <div class="phase-label">Personal vocabulary · Phase 3</div>
         <button class="vocabulary-link" id="open-vocabulary" type="button" aria-expanded="false">
-          Saved vocabulary <span id="vocabulary-count" aria-label="0 saved terms">0</span>
+          My Words <span id="vocabulary-count" aria-label="0 saved terms">0</span>
         </button>
       </div>
     </header>
 
     <main>
-      <section class="intro" aria-labelledby="page-title">
+      <section class="intro" id="home-intro" aria-labelledby="page-title">
         <div>
           <p class="eyebrow">Sunday reading · 13 September</p>
-          <h1 id="page-title">Read what matters.<br><span>Keep the Chinese.</span></h1>
+          <h1 id="page-title">Read what matters. Keep the Chinese.</h1>
         </div>
         <p class="intro__copy">A short, considered selection of recent Chinese reporting for readers who want context without leaving the original language behind.</p>
       </section>
 
-      <section class="controls" aria-label="Reading controls">
+      <section class="controls" id="reading-controls" aria-label="Reading controls">
         <button class="primary-button" id="load-reading" type="button">查看今日文章</button>
         <label class="state-control" id="preview-state-control" for="preview-state" hidden>
           Preview state
@@ -124,7 +127,7 @@
         <header class="vocabulary__header">
           <div>
             <p class="eyebrow">Your personal list</p>
-            <h2 id="vocabulary-title">Saved vocabulary</h2>
+            <h2 id="vocabulary-title">My Words</h2>
           </div>
           <p>Terms stay in this browser. Each one keeps the sentence and article that gave it meaning.</p>
         </header>
@@ -133,6 +136,17 @@
         <div id="vocabulary-list" class="vocabulary-list"></div>
       </section>
     </main>
+
+    <nav class="mobile-nav" aria-label="Primary navigation">
+      <button id="mobile-home" type="button" aria-label="Home" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M9.5 20v-6h5v6"/></svg>
+        <span>Home</span>
+      </button>
+      <button id="mobile-vocabulary" type="button" aria-label="My Words">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h11a2 2 0 0 1 2 2V21l-7.5-4-6.5 4V4.5a1 1 0 0 1 1-1Z"/></svg>
+        <span>My Words</span>
+      </button>
+    </nav>
 
     <footer>
       <p>Original reporting remains with its publisher. Source links accompany every reading.</p>

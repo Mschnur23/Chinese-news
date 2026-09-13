@@ -30,6 +30,8 @@ Discovery continues to use a transparent interest, recency, and topic heuristic.
 
 Saved vocabulary uses versioned browser `localStorage`; it never leaves the device and requires no account or database. Duplicate identity is based on the normalized term, article ID, and original context sentence. If stored data is malformed or unavailable, the app reports a recoverable error and leaves the existing value untouched.
 
+The interface follows `DailyChineseRead_StyleGuide.md`: a light editorial canvas, black Chinese headlines, muted metadata, restrained blue emphasis, compact rounded surfaces, a centered reading column, and simple Home/My Words navigation on mobile.
+
 ## Source limitations
 
 - Publisher markup may change; each adapter fails independently and returns a public warning.

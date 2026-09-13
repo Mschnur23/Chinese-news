@@ -113,6 +113,10 @@ requiredIds.forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `in
   "vocabulary-status",
   "vocabulary-notice",
   "vocabulary-list",
+  "mobile-home",
+  "mobile-vocabulary",
+  "home-intro",
+  "reading-controls",
 ].forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `index.html is missing Phase 3 DOM id: ${id}`));
 
 const sample = JSON.parse(await text("data/sample.json"));

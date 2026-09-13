@@ -10,6 +10,7 @@ import {
   markSavedTerms,
   onArticleSelected,
   onAnalysisRequested,
+  onHomeRequested,
   onTermSaveRequested,
   onVocabularyBack,
   onVocabularyRemoveRequested,
@@ -250,6 +251,11 @@ function closeReader() {
   setSentenceHelpBusy(false);
 }
 
+function goHome() {
+  closeReader();
+  hideVocabularyView();
+}
+
 onLoadRequested(loadReading);
 onPreviewStateChanged(loadReading);
 onArticleSelected(openArticle);
@@ -257,6 +263,7 @@ onAnalysisRequested(prepareAnalysis);
 onTermSaveRequested(saveVocabularyTerm);
 onSentenceHelpRequested(explainSentence);
 onReaderBack(closeReader);
+onHomeRequested(goHome);
 onVocabularyRequested(openVocabulary);
 onVocabularyBack(hideVocabularyView);
 onVocabularyRemoveRequested(removeVocabulary);

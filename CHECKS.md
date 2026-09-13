@@ -42,3 +42,4 @@ Run this list after every phase. Record failures; never remove a previously pass
 38. Saved terms survive refresh, render with their contextual sentence and article link, and can be revisited from either the list or reader. *(Phase 3)*
 39. Removing one saved term preserves every other record and returns the removed term’s Save action to its available state. *(Phase 3)*
 40. Invalid JSON, unknown versions, malformed records, duplicate stored IDs, and unavailable storage show a recoverable error without overwriting existing data. *(Phase 3)*
+41. The interface follows `DailyChineseRead_StyleGuide.md`: warm-gray canvas, white rounded feed cards, restrained blue accents, readable 18–22 px article text, centered content widths, and a two-destination mobile navigation without gradients or decorative animation. *(Style guide)*

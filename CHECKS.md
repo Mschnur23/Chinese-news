@@ -31,3 +31,7 @@ Run this list after every phase. Record failures; never remove a previously pass
 27. 界面新闻 paid content and any suspiciously short or navigation-heavy extraction is rejected with a readable message.
 28. Closing the reader returns keyboard focus to the article list.
 29. The end of every readable article shows the publication name, a brief description, and a working link to the publication homepage.
+30. Changing the learner level and retrying analysis produces a new request without replacing or hiding the original article.
+31. Term highlights never inject model output as HTML; overlapping terms remain readable and keyboard accessible.
+32. `/api/analyze` and `/api/explain` accept JSON only, bound request sizes, and return safe public errors when AI is unconfigured or unavailable.
+33. Model prompts explicitly delimit retrieved article text as untrusted data, and provider credentials remain server-side.

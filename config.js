@@ -18,12 +18,13 @@ export const config = Object.freeze({
   maximumArticleCharacters: 30000,
   maximumSentenceCharacters: 500,
   requestTimeoutMs: 10000,
+  analysisRequestTimeoutMs: 45000,
   storageKey: "daily-chinese-read:v1:vocabulary",
   storageVersion: 1,
   featureFlags: Object.freeze({
     liveRetrieval: true,
     showPreviewStates: false,
-    languageScaffolding: false,
+    languageScaffolding: true,
     vocabulary: false,
   }),
 });

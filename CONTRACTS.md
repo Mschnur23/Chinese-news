@@ -131,6 +131,8 @@ Only `ui.js` may read from or write to the DOM.
 
 - `source.load(params)` → `{ items: ArticleSummary[], warnings: string[] }`. Foundation-only test parameters may simulate an isolated source failure; they are removed when Phase 1 replaces sample loading.
 - `source.detail(id)` → `ArticleDetail`.
+- `source.analyze(article, learnerLevel)` → `ArticleAnalysis`.
+- `source.explain({ article, sentenceZh, learnerLevel })` → `SentenceExplanation`.
 - `source.save(record)` → reserved for Phase 3; rejects during foundation.
 - `source.list()` → `VocabularyRecord[]`; returns `[]` during foundation.
 
@@ -163,3 +165,11 @@ This replaces the Phase 0 `yicai` identifier and migrates the source set from tw
 - Article IDs are server-issued values matching `the-paper:<digits>`, `stcn:<digits>`, or `jiemian:<digits>`; arbitrary URLs are never accepted.
 - `renderArticle(article)`, `clearReader()`, `setArticleBusy(isBusy)`, `showArticleError(message)`, `onArticleSelected(handler)`, `onReaderBack(handler)`, and `setPreviewControlsVisible(isVisible)` are additive `ui.js` exports.
 - Phase 1 adds DOM IDs `reading-list`, `reader`, `reader-back`, `reader-status`, `reader-error`, `reader-content`, and `preview-state-control`.
+
+### Phase 2 API and UI details
+
+- `POST /api/analyze` accepts `{ article: ArticleDetail, learnerLevel, interests }` and returns a validated `ArticleAnalysis` envelope.
+- `POST /api/explain` accepts `{ article: ArticleDetail, sentenceZh, learnerLevel }` and returns a validated `SentenceExplanation` envelope.
+- Both routes accept JSON only, bound request sizes, treat article text as untrusted input, use server-only provider credentials, and expose no provider response or prompt text in errors.
+- `clearAnalysis(article)`, `getLearnerLevel()`, `onAnalysisRequested(handler)`, `onSentenceHelpRequested(handler)`, `renderAnalysis(article, analysis)`, `renderSentenceHelp(explanation)`, `setAnalysisBusy(isBusy)`, `setSentenceHelpBusy(isBusy)`, `showAnalysisError(message)`, and `showSentenceHelpError(message)` are additive `ui.js` exports.
+- Phase 2 adds DOM IDs `language-tools`, `learner-level`, `analyze-article`, `analysis-status`, `analysis-error`, `analysis-panel`, `analysis-gist`, `analysis-terms`, `sentence-tools`, `explain-sentence`, `selection-preview`, `sentence-status`, `sentence-error`, and `sentence-result`.

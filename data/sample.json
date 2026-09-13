@@ -35,6 +35,8 @@
       "titleZh": "硬科技创业者走向产业一线：耐心资本与长期研发受关注",
       "sourceId": "the-paper",
       "sourceName": "澎湃新闻",
+      "sourceHomepageUrl": "https://www.thepaper.cn/",
+      "sourceDescription": "A Shanghai-based Chinese news publication known for current affairs, public policy, and in-depth reporting.",
       "canonicalUrl": "https://www.thepaper.cn/",
       "publishedAt": "2026-09-12T18:10:00+08:00",
       "topic": "创业",
@@ -65,13 +67,17 @@
       "titleZh": "人工智能产业进入应用深化期，企业如何寻找新增长点",
       "sourceId": "the-paper",
       "sourceName": "澎湃新闻",
+      "sourceHomepageUrl": "https://www.thepaper.cn/",
+      "sourceDescription": "A Shanghai-based Chinese news publication known for current affairs, public policy, and in-depth reporting.",
       "canonicalUrl": "https://www.thepaper.cn/",
       "publishedAt": "2026-09-13T08:20:00+08:00",
       "author": "示例作者",
-      "bodyText": "人工智能产业正在从技术探索走向规模化应用。越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。\n\n在制造、医疗和金融等行业，应用场景正在逐步清晰。与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。",
+      "bodyText": "人工智能产业正在从技术探索走向规模化应用。\n\n越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。\n\n在制造、医疗和金融等行业，应用场景正在逐步清晰。\n\n与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。",
       "paragraphs": [
-        "人工智能产业正在从技术探索走向规模化应用。越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。",
-        "在制造、医疗和金融等行业，应用场景正在逐步清晰。与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。"
+        "人工智能产业正在从技术探索走向规模化应用。",
+        "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。",
+        "在制造、医疗和金融等行业，应用场景正在逐步清晰。",
+        "与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。"
       ]
     }
   ],

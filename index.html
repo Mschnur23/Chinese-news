@@ -17,7 +17,7 @@
         <span class="wordmark__mark" aria-hidden="true">读</span>
         <span>Daily Chinese Read</span>
       </a>
-      <div class="phase-label">Live sources · Phase 1</div>
+      <div class="phase-label">Language scaffolding · Phase 2</div>
     </header>
 
     <main>
@@ -61,6 +61,53 @@
           <span id="reader-status" role="status" aria-live="polite"></span>
         </div>
         <div id="reader-error" class="notice notice--error" role="alert" hidden></div>
+        <section class="language-tools" id="language-tools" aria-labelledby="language-tools-title" hidden>
+          <div class="language-tools__controls">
+            <div>
+              <p class="eyebrow">AI reading support</p>
+              <h2 id="language-tools-title">Keep the article. Add just enough help.</h2>
+            </div>
+            <div class="language-tools__actions">
+              <label for="learner-level">
+                Mandarin level
+                <select id="learner-level">
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced" selected>Advanced</option>
+                </select>
+              </label>
+              <button class="secondary-button" id="analyze-article" type="button">Prepare language guide</button>
+            </div>
+          </div>
+          <p class="language-status" id="analysis-status" role="status" aria-live="polite"></p>
+          <div id="analysis-error" class="notice notice--error" role="alert" hidden></div>
+          <section class="analysis-panel" id="analysis-panel" aria-label="Article language guide" hidden>
+            <div class="analysis-gist">
+              <p class="eyebrow">Article in brief</p>
+              <div id="analysis-gist"></div>
+            </div>
+            <div class="analysis-terms">
+              <div class="analysis-terms__heading">
+                <p class="eyebrow">10 terms in context</p>
+                <p>Choose a term to jump to it in the article.</p>
+              </div>
+              <div class="term-list" id="analysis-terms"></div>
+            </div>
+          </section>
+          <section class="sentence-tools" id="sentence-tools" aria-labelledby="sentence-tools-title">
+            <div>
+              <p class="eyebrow">Sentence help</p>
+              <h3 id="sentence-tools-title">Select a difficult sentence in the article.</h3>
+              <p>Highlight Chinese text below, then ask for a natural translation and a short explanation.</p>
+            </div>
+            <div class="sentence-tools__action">
+              <p id="selection-preview">No sentence selected yet.</p>
+              <button class="secondary-button" id="explain-sentence" type="button" disabled>Explain selected sentence</button>
+            </div>
+            <p class="language-status" id="sentence-status" role="status" aria-live="polite"></p>
+            <div id="sentence-error" class="notice notice--error" role="alert" hidden></div>
+            <div class="sentence-result" id="sentence-result" tabindex="-1" hidden></div>
+          </section>
+        </section>
         <article id="reader-content"></article>
       </section>
     </main>

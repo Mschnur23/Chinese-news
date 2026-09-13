@@ -14,16 +14,24 @@ function unavailable(feature) {
   throw new Error(`${feature}_AVAILABLE_IN_LATER_PHASE`);
 }
 
-async function requestJson(url) {
+async function requestJson(url, options = {}) {
   if (window.location.protocol === "file:") {
     throw new Error("Open this reader through its local or deployed web address to use live articles.");
   }
 
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), config.requestTimeoutMs);
+  const timeout = window.setTimeout(
+    () => controller.abort(),
+    options.timeoutMs || config.requestTimeoutMs,
+  );
   try {
     const response = await fetch(url, {
-      headers: { Accept: "application/json" },
+      method: options.method || "GET",
+      headers: {
+        Accept: "application/json",
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
       signal: controller.signal,
     });
     const payload = await response.json().catch(() => null);
@@ -63,6 +71,38 @@ export const source = Object.freeze({
       return article;
     }
     const payload = await requestJson(`/api/article?id=${encodeURIComponent(id)}`);
+    return payload.data;
+  },
+
+  async analyze(article, learnerLevel) {
+    if (config.mode === "sample") {
+      const samples = await readSamples();
+      if (samples.articleAnalysis?.articleId !== article.id) throw new Error("Sample analysis is unavailable for this article.");
+      await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
+      return samples.articleAnalysis;
+    }
+    const payload = await requestJson("/api/analyze", {
+      method: "POST",
+      timeoutMs: config.analysisRequestTimeoutMs,
+      body: { article, learnerLevel, interests: config.defaultInterests },
+    });
+    return payload.data;
+  },
+
+  async explain({ article, sentenceZh, learnerLevel }) {
+    if (config.mode === "sample") {
+      const samples = await readSamples();
+      if (!article.bodyText.includes(sentenceZh) || !sentenceZh.includes("越来越多企业")) {
+        throw new Error("Select the complete sample sentence beginning with ‘越来越多企业’.");
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
+      return { ...samples.sentenceExplanation, sentenceZh };
+    }
+    const payload = await requestJson("/api/explain", {
+      method: "POST",
+      timeoutMs: config.analysisRequestTimeoutMs,
+      body: { article, sentenceZh, learnerLevel },
+    });
     return payload.data;
   },
 

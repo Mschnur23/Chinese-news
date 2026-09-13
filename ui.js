@@ -13,9 +13,26 @@ const elements = {
   readerStatus: document.querySelector("#reader-status"),
   readerError: document.querySelector("#reader-error"),
   readerContent: document.querySelector("#reader-content"),
+  languageTools: document.querySelector("#language-tools"),
+  learnerLevel: document.querySelector("#learner-level"),
+  analyzeButton: document.querySelector("#analyze-article"),
+  analysisStatus: document.querySelector("#analysis-status"),
+  analysisError: document.querySelector("#analysis-error"),
+  analysisPanel: document.querySelector("#analysis-panel"),
+  analysisGist: document.querySelector("#analysis-gist"),
+  analysisTerms: document.querySelector("#analysis-terms"),
+  sentenceTools: document.querySelector("#sentence-tools"),
+  explainButton: document.querySelector("#explain-sentence"),
+  selectionPreview: document.querySelector("#selection-preview"),
+  sentenceStatus: document.querySelector("#sentence-status"),
+  sentenceError: document.querySelector("#sentence-error"),
+  sentenceResult: document.querySelector("#sentence-result"),
 };
 
 let lastArticleTrigger = null;
+let currentReaderBody = null;
+let currentArticle = null;
+let selectedSentence = "";
 
 function createElement(tagName, className, text) {
   const element = document.createElement(tagName);
@@ -147,6 +164,7 @@ export function setArticleBusy(isBusy) {
   if (isBusy) {
     elements.listSection.hidden = true;
     elements.readerContent.replaceChildren();
+    elements.languageTools.hidden = true;
   }
 }
 
@@ -190,7 +208,166 @@ export function renderArticle(article) {
   publication.append(publicationKicker, publicationName, publicationDescription, publicationLink);
 
   elements.readerContent.replaceChildren(header, body, publication);
+  currentReaderBody = body;
+  currentArticle = article;
+  selectedSentence = "";
+  elements.selectionPreview.textContent = "No sentence selected yet.";
+  elements.explainButton.disabled = true;
+  elements.languageTools.hidden = false;
+  clearAnalysis(article);
+  clearSentenceHelp();
   elements.reader.focus();
+}
+
+function appendHighlightedParagraph(paragraphElement, text, terms) {
+  const orderedTerms = terms
+    .map((term, index) => ({ ...term, index }))
+    .sort((left, right) => right.exactOccurrence.length - left.exactOccurrence.length);
+  let cursor = 0;
+
+  while (cursor < text.length) {
+    let match = null;
+    orderedTerms.forEach((term) => {
+      const position = text.indexOf(term.exactOccurrence, cursor);
+      if (position < 0) return;
+      if (!match || position < match.position || (position === match.position && term.exactOccurrence.length > match.term.exactOccurrence.length)) {
+        match = { position, term };
+      }
+    });
+
+    if (!match) {
+      paragraphElement.append(document.createTextNode(text.slice(cursor)));
+      break;
+    }
+    if (match.position > cursor) paragraphElement.append(document.createTextNode(text.slice(cursor, match.position)));
+
+    const highlight = createElement("button", "term-highlight", match.term.exactOccurrence);
+    highlight.type = "button";
+    highlight.dataset.termIndex = String(match.term.index);
+    highlight.setAttribute("aria-expanded", "false");
+    highlight.setAttribute(
+      "aria-label",
+      `${match.term.termZh}, ${match.term.pinyin}: ${match.term.meaningEn}`,
+    );
+    const tooltip = createElement("span", "term-tooltip");
+    tooltip.setAttribute("aria-hidden", "true");
+    tooltip.append(
+      createElement("strong", "", match.term.pinyin),
+      createElement("span", "", match.term.meaningEn),
+    );
+    highlight.append(tooltip);
+    paragraphElement.append(highlight);
+    cursor = match.position + match.term.exactOccurrence.length;
+  }
+}
+
+export function clearAnalysis(article = currentArticle) {
+  elements.analysisPanel.hidden = true;
+  elements.analysisGist.replaceChildren();
+  elements.analysisTerms.replaceChildren();
+  elements.analysisStatus.textContent = "";
+  elements.analysisError.hidden = true;
+  elements.analysisError.textContent = "";
+
+  if (article && currentReaderBody) {
+    currentReaderBody.replaceChildren();
+    article.paragraphs.forEach((text) => currentReaderBody.append(createElement("p", "", text)));
+  }
+}
+
+export function setAnalysisBusy(isBusy) {
+  elements.analyzeButton.disabled = isBusy;
+  elements.learnerLevel.disabled = isBusy;
+  elements.analyzeButton.textContent = isBusy ? "Preparing…" : "Prepare language guide";
+  if (isBusy) {
+    elements.analysisStatus.textContent = "Finding 10 useful terms and checking each one against the article…";
+  } else if (elements.analysisStatus.textContent.startsWith("Finding 10")) {
+    elements.analysisStatus.textContent = "";
+  }
+}
+
+export function showAnalysisError(message) {
+  elements.analysisError.textContent = message;
+  elements.analysisError.hidden = !message;
+}
+
+export function renderAnalysis(article, analysis) {
+  elements.analysisGist.replaceChildren();
+  analysis.gistEn.forEach((sentence) => elements.analysisGist.append(createElement("p", "", sentence)));
+
+  const termFragment = document.createDocumentFragment();
+  analysis.terms.forEach((term, index) => {
+    const button = createElement("button", "term-card");
+    button.type = "button";
+    button.dataset.termIndex = String(index);
+    button.setAttribute("aria-label", `Find ${term.termZh} in the article`);
+    button.append(
+      createElement("strong", "term-card__zh", term.termZh),
+      createElement("span", "term-card__pinyin", term.pinyin),
+      createElement("span", "term-card__meaning", term.meaningEn),
+    );
+    termFragment.append(button);
+  });
+  elements.analysisTerms.replaceChildren(termFragment);
+
+  if (currentReaderBody) {
+    currentReaderBody.replaceChildren();
+    article.paragraphs.forEach((text) => {
+      const paragraph = createElement("p");
+      appendHighlightedParagraph(paragraph, text, analysis.terms);
+      currentReaderBody.append(paragraph);
+    });
+  }
+
+  elements.analysisPanel.hidden = false;
+  elements.analysisStatus.textContent = "Language guide ready. Highlighted terms now appear in the original article.";
+}
+
+export function getLearnerLevel() {
+  return elements.learnerLevel.value;
+}
+
+export function onAnalysisRequested(handler) {
+  elements.analyzeButton.addEventListener("click", handler);
+}
+
+export function setSentenceHelpBusy(isBusy) {
+  elements.explainButton.disabled = isBusy || !selectedSentence;
+  elements.explainButton.textContent = isBusy ? "Explaining…" : "Explain selected sentence";
+  if (isBusy) {
+    elements.sentenceStatus.textContent = "Preparing a grounded translation and explanation…";
+  } else if (elements.sentenceStatus.textContent.startsWith("Preparing a grounded")) {
+    elements.sentenceStatus.textContent = "";
+  }
+}
+
+export function showSentenceHelpError(message) {
+  elements.sentenceError.textContent = message;
+  elements.sentenceError.hidden = !message;
+}
+
+export function renderSentenceHelp(explanation) {
+  const selected = createElement("blockquote", "sentence-result__source", explanation.sentenceZh);
+  const translationLabel = createElement("p", "eyebrow", "Natural translation");
+  const translation = createElement("p", "sentence-result__translation", explanation.translationEn);
+  const explanationLabel = createElement("p", "eyebrow", "Grammar & context");
+  const detail = createElement("p", "", explanation.explanationEn);
+  elements.sentenceResult.replaceChildren(selected, translationLabel, translation, explanationLabel, detail);
+  elements.sentenceResult.hidden = false;
+  elements.sentenceStatus.textContent = "Sentence help ready.";
+  elements.sentenceResult.focus();
+}
+
+function clearSentenceHelp() {
+  elements.sentenceResult.hidden = true;
+  elements.sentenceResult.replaceChildren();
+  elements.sentenceError.hidden = true;
+  elements.sentenceError.textContent = "";
+  elements.sentenceStatus.textContent = "";
+}
+
+export function onSentenceHelpRequested(handler) {
+  elements.explainButton.addEventListener("click", () => handler(selectedSentence));
 }
 
 export function clearReader() {
@@ -198,6 +375,10 @@ export function clearReader() {
   elements.readerContent.replaceChildren();
   elements.readerError.hidden = true;
   elements.listSection.hidden = false;
+  elements.languageTools.hidden = true;
+  currentReaderBody = null;
+  currentArticle = null;
+  selectedSentence = "";
   lastArticleTrigger?.focus();
 }
 
@@ -214,3 +395,37 @@ export function onArticleSelected(handler) {
 export function onReaderBack(handler) {
   elements.readerBack.addEventListener("click", handler);
 }
+
+elements.analysisTerms.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-term-index]");
+  if (!button || !currentReaderBody) return;
+  const highlight = currentReaderBody.querySelector(`.term-highlight[data-term-index="${button.dataset.termIndex}"]`);
+  if (highlight) {
+    highlight.focus();
+    highlight.scrollIntoView({ block: "center", behavior: "smooth" });
+  }
+});
+
+elements.readerContent.addEventListener("click", (event) => {
+  const highlight = event.target.closest(".term-highlight");
+  if (!highlight) return;
+  const willOpen = highlight.getAttribute("aria-expanded") !== "true";
+  currentReaderBody?.querySelectorAll(".term-highlight[aria-expanded=\"true\"]").forEach((item) => item.setAttribute("aria-expanded", "false"));
+  highlight.setAttribute("aria-expanded", String(willOpen));
+});
+
+document.addEventListener("selectionchange", () => {
+  if (!currentReaderBody) return;
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+  const range = selection.getRangeAt(0);
+  const ancestor = range.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+    ? range.commonAncestorContainer
+    : range.commonAncestorContainer.parentElement;
+  if (!ancestor || !currentReaderBody.contains(ancestor)) return;
+
+  selectedSentence = selection.toString().replace(/\s+/g, " ").trim();
+  elements.selectionPreview.textContent = selectedSentence || "No sentence selected yet.";
+  elements.explainButton.disabled = !selectedSentence;
+  clearSentenceHelp();
+});

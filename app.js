@@ -6,8 +6,14 @@ import {
   clearAnalysis,
   getLearnerLevel,
   getPreviewState,
+  hideVocabularyView,
+  markSavedTerms,
   onArticleSelected,
   onAnalysisRequested,
+  onTermSaveRequested,
+  onVocabularyBack,
+  onVocabularyRemoveRequested,
+  onVocabularyRequested,
   onSentenceHelpRequested,
   onLoadRequested,
   onPreviewStateChanged,
@@ -15,6 +21,7 @@ import {
   renderArticle,
   renderAnalysis,
   renderSentenceHelp,
+  renderVocabulary,
   renderList,
   setArticleBusy,
   setAnalysisBusy,
@@ -22,6 +29,14 @@ import {
   setSentenceHelpBusy,
   setPreviewControlsVisible,
   setStatus,
+  setTermSaveBusy,
+  setVocabularyBusy,
+  setVocabularyCount,
+  setVocabularyRemoveBusy,
+  showTermSaveResult,
+  showVocabularyEmpty,
+  showVocabularyError,
+  showVocabularyView,
   showArticleError,
   showAnalysisError,
   showEmpty,
@@ -111,11 +126,86 @@ async function prepareAnalysis() {
     const analysis = await source.analyze(article, getLearnerLevel());
     if (requestVersion !== analysisRequestVersion || article !== currentArticle) return;
     renderAnalysis(article, analysis);
+    try {
+      markSavedTerms(await source.list());
+    } catch (error) {
+      showTermSaveResult(-1, false, readableError(error, "Saved vocabulary is temporarily unavailable."));
+    }
   } catch (error) {
     if (requestVersion !== analysisRequestVersion) return;
     showAnalysisError(readableError(error, "The language guide could not be prepared. The original article is still available below."));
   } finally {
     if (requestVersion === analysisRequestVersion) setAnalysisBusy(false);
+  }
+}
+
+function vocabularyRecord(article, term) {
+  return {
+    id: "",
+    termZh: term.termZh,
+    pinyin: term.pinyin,
+    meaningEn: term.meaningEn,
+    contextSentenceZh: term.contextSentenceZh,
+    articleId: article.id,
+    articleTitleZh: article.titleZh,
+    sourceName: article.sourceName,
+    canonicalUrl: article.canonicalUrl,
+    publishedAt: article.publishedAt,
+    savedAt: new Date().toISOString(),
+  };
+}
+
+async function saveVocabularyTerm({ article, term, index }) {
+  setTermSaveBusy(index, true);
+  try {
+    const result = await source.save(vocabularyRecord(article, term));
+    setVocabularyCount(result.records.length);
+    showTermSaveResult(
+      index,
+      true,
+      result.added ? `${term.termZh} was saved to your vocabulary.` : `${term.termZh} is already saved.`,
+    );
+  } catch (error) {
+    showTermSaveResult(index, false, readableError(error, "This term could not be saved. Please try again."));
+  }
+}
+
+async function openVocabulary() {
+  showVocabularyView();
+  showVocabularyError("");
+  setVocabularyBusy(true);
+  try {
+    const records = await source.list();
+    setVocabularyCount(records.length);
+    if (records.length) renderVocabulary(records);
+    else showVocabularyEmpty("No saved terms yet. Open an article and save a term from its language guide.");
+  } catch (error) {
+    showVocabularyError(readableError(error, "Saved vocabulary could not be loaded. Your existing browser data was left unchanged."));
+  } finally {
+    setVocabularyBusy(false);
+  }
+}
+
+async function removeVocabulary(id) {
+  setVocabularyRemoveBusy(id, true);
+  try {
+    const result = await source.remove(id);
+    setVocabularyCount(result.records.length);
+    markSavedTerms(result.records);
+    if (result.records.length) renderVocabulary(result.records);
+    else showVocabularyEmpty("No saved terms yet. Open an article and save a term from its language guide.");
+  } catch (error) {
+    showVocabularyError(readableError(error, "That saved term could not be removed. Your other terms were not changed."), false);
+  } finally {
+    setVocabularyRemoveBusy(id, false);
+  }
+}
+
+async function refreshVocabularyCount() {
+  try {
+    setVocabularyCount((await source.list()).length);
+  } catch {
+    setVocabularyCount(0);
   }
 }
 
@@ -164,7 +254,12 @@ onLoadRequested(loadReading);
 onPreviewStateChanged(loadReading);
 onArticleSelected(openArticle);
 onAnalysisRequested(prepareAnalysis);
+onTermSaveRequested(saveVocabularyTerm);
 onSentenceHelpRequested(explainSentence);
 onReaderBack(closeReader);
+onVocabularyRequested(openVocabulary);
+onVocabularyBack(hideVocabularyView);
+onVocabularyRemoveRequested(removeVocabulary);
 setPreviewControlsVisible(config.featureFlags.showPreviewStates);
+refreshVocabularyCount();
 loadReading();

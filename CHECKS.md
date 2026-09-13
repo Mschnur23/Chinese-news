@@ -37,3 +37,8 @@ Run this list after every phase. Record failures; never remove a previously pass
 33. Model prompts explicitly delimit retrieved article text as untrusted data, and provider credentials remain server-side.
 34. `npm run check` passes the Technical Guidelines architecture, configuration, contract, sample-data, and secret-safety checks.
 35. Opening `/?preview=1` exposes success, partial-source, empty, error, and busy states without changing the live default.
+36. Saving a selected term immediately marks it saved, increments the count, and stores every `VocabularyRecord` field. *(Phase 3)*
+37. Saving the same normalized term, article, and context twice leaves one stored row. *(Phase 3)*
+38. Saved terms survive refresh, render with their contextual sentence and article link, and can be revisited from either the list or reader. *(Phase 3)*
+39. Removing one saved term preserves every other record and returns the removed term’s Save action to its available state. *(Phase 3)*
+40. Invalid JSON, unknown versions, malformed records, duplicate stored IDs, and unavailable storage show a recoverable error without overwriting existing data. *(Phase 3)*

@@ -33,6 +33,6 @@ export const config = Object.freeze({
     liveRetrieval: true,
     showPreviewStates: previewMode,
     languageScaffolding: true,
-    vocabulary: false,
+    vocabulary: true,
   }),
 });

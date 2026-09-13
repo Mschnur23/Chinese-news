@@ -17,7 +17,12 @@
         <span class="wordmark__mark" aria-hidden="true">读</span>
         <span>Daily Chinese Read</span>
       </a>
-      <div class="phase-label">Language scaffolding · Phase 2</div>
+      <div class="header-actions">
+        <div class="phase-label">Personal vocabulary · Phase 3</div>
+        <button class="vocabulary-link" id="open-vocabulary" type="button" aria-expanded="false">
+          Saved vocabulary <span id="vocabulary-count" aria-label="0 saved terms">0</span>
+        </button>
+      </div>
     </header>
 
     <main>
@@ -79,6 +84,7 @@
             </div>
           </div>
           <p class="language-status" id="analysis-status" role="status" aria-live="polite"></p>
+          <p class="save-status" id="vocabulary-save-status" role="status" aria-live="polite"></p>
           <div id="analysis-error" class="notice notice--error" role="alert" hidden></div>
           <section class="analysis-panel" id="analysis-panel" aria-label="Article language guide" hidden>
             <div class="analysis-gist">
@@ -109,6 +115,22 @@
           </section>
         </section>
         <article id="reader-content"></article>
+      </section>
+
+      <section class="vocabulary" id="vocabulary" aria-labelledby="vocabulary-title" tabindex="-1" hidden>
+        <div class="vocabulary__toolbar">
+          <button class="text-button" id="vocabulary-back" type="button">← Back to reading</button>
+        </div>
+        <header class="vocabulary__header">
+          <div>
+            <p class="eyebrow">Your personal list</p>
+            <h2 id="vocabulary-title">Saved vocabulary</h2>
+          </div>
+          <p>Terms stay in this browser. Each one keeps the sentence and article that gave it meaning.</p>
+        </header>
+        <p id="vocabulary-status" class="status" role="status" aria-live="polite"></p>
+        <div id="vocabulary-notice" class="notice" role="alert" hidden></div>
+        <div id="vocabulary-list" class="vocabulary-list"></div>
       </section>
     </main>
 

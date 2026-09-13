@@ -27,12 +27,22 @@ const elements = {
   sentenceStatus: document.querySelector("#sentence-status"),
   sentenceError: document.querySelector("#sentence-error"),
   sentenceResult: document.querySelector("#sentence-result"),
+  vocabularyOpen: document.querySelector("#open-vocabulary"),
+  vocabularyCount: document.querySelector("#vocabulary-count"),
+  vocabularySaveStatus: document.querySelector("#vocabulary-save-status"),
+  vocabulary: document.querySelector("#vocabulary"),
+  vocabularyBack: document.querySelector("#vocabulary-back"),
+  vocabularyStatus: document.querySelector("#vocabulary-status"),
+  vocabularyNotice: document.querySelector("#vocabulary-notice"),
+  vocabularyList: document.querySelector("#vocabulary-list"),
 };
 
 let lastArticleTrigger = null;
 let currentReaderBody = null;
 let currentArticle = null;
+let currentAnalysis = null;
 let selectedSentence = "";
+let vocabularyReturnView = "list";
 
 function createElement(tagName, className, text) {
   const element = document.createElement(tagName);
@@ -210,6 +220,7 @@ export function renderArticle(article) {
   elements.readerContent.replaceChildren(header, body, publication);
   currentReaderBody = body;
   currentArticle = article;
+  currentAnalysis = null;
   selectedSentence = "";
   elements.selectionPreview.textContent = "No sentence selected yet.";
   elements.explainButton.disabled = true;
@@ -262,6 +273,7 @@ function appendHighlightedParagraph(paragraphElement, text, terms) {
 }
 
 export function clearAnalysis(article = currentArticle) {
+  currentAnalysis = null;
   elements.analysisPanel.hidden = true;
   elements.analysisGist.replaceChildren();
   elements.analysisTerms.replaceChildren();
@@ -292,21 +304,28 @@ export function showAnalysisError(message) {
 }
 
 export function renderAnalysis(article, analysis) {
+  currentAnalysis = analysis;
   elements.analysisGist.replaceChildren();
   analysis.gistEn.forEach((sentence) => elements.analysisGist.append(createElement("p", "", sentence)));
 
   const termFragment = document.createDocumentFragment();
   analysis.terms.forEach((term, index) => {
-    const button = createElement("button", "term-card");
-    button.type = "button";
-    button.dataset.termIndex = String(index);
-    button.setAttribute("aria-label", `Find ${term.termZh} in the article`);
-    button.append(
+    const card = createElement("div", "term-card");
+    const jumpButton = createElement("button", "term-card__jump");
+    jumpButton.type = "button";
+    jumpButton.dataset.termIndex = String(index);
+    jumpButton.setAttribute("aria-label", `Find ${term.termZh} in the article`);
+    jumpButton.append(
       createElement("strong", "term-card__zh", term.termZh),
       createElement("span", "term-card__pinyin", term.pinyin),
       createElement("span", "term-card__meaning", term.meaningEn),
     );
-    termFragment.append(button);
+    const saveButton = createElement("button", "term-card__save", "Save term");
+    saveButton.type = "button";
+    saveButton.dataset.saveTermIndex = String(index);
+    saveButton.setAttribute("aria-label", `Save ${term.termZh} to vocabulary`);
+    card.append(jumpButton, saveButton);
+    termFragment.append(card);
   });
   elements.analysisTerms.replaceChildren(termFragment);
 
@@ -320,7 +339,49 @@ export function renderAnalysis(article, analysis) {
   }
 
   elements.analysisPanel.hidden = false;
+  elements.vocabularySaveStatus.textContent = "";
   elements.analysisStatus.textContent = "Language guide ready. Highlighted terms now appear in the original article.";
+}
+
+export function onTermSaveRequested(handler) {
+  elements.analysisTerms.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-save-term-index]");
+    if (!button || !currentArticle || !currentAnalysis) return;
+    const index = Number(button.dataset.saveTermIndex);
+    const term = currentAnalysis.terms[index];
+    if (term) handler({ article: currentArticle, term, index });
+  });
+}
+
+export function setTermSaveBusy(index, isBusy) {
+  const button = elements.analysisTerms.querySelector(`button[data-save-term-index="${index}"]`);
+  if (!button) return;
+  button.disabled = isBusy;
+  button.textContent = isBusy ? "Saving…" : "Save term";
+}
+
+export function showTermSaveResult(index, isSaved, message) {
+  const button = elements.analysisTerms.querySelector(`button[data-save-term-index="${index}"]`);
+  if (button) {
+    const term = currentAnalysis?.terms[index];
+    button.disabled = isSaved;
+    button.classList.toggle("term-card__save--saved", isSaved);
+    button.textContent = isSaved ? "Saved ✓" : "Save term";
+    if (term) button.setAttribute("aria-label", isSaved ? `${term.termZh} is saved` : `Save ${term.termZh} to vocabulary`);
+  }
+  elements.vocabularySaveStatus.textContent = message;
+}
+
+export function markSavedTerms(records) {
+  if (!currentArticle || !currentAnalysis) return;
+  currentAnalysis.terms.forEach((term, index) => {
+    const isSaved = records.some((record) => (
+      record.articleId === currentArticle.id
+      && record.termZh === term.termZh
+      && record.contextSentenceZh === term.contextSentenceZh
+    ));
+    showTermSaveResult(index, isSaved, "");
+  });
 }
 
 export function getLearnerLevel() {
@@ -378,6 +439,7 @@ export function clearReader() {
   elements.languageTools.hidden = true;
   currentReaderBody = null;
   currentArticle = null;
+  currentAnalysis = null;
   selectedSentence = "";
   lastArticleTrigger?.focus();
 }
@@ -394,6 +456,114 @@ export function onArticleSelected(handler) {
 
 export function onReaderBack(handler) {
   elements.readerBack.addEventListener("click", handler);
+}
+
+export function onVocabularyRequested(handler) {
+  elements.vocabularyOpen.addEventListener("click", handler);
+}
+
+export function onVocabularyBack(handler) {
+  elements.vocabularyBack.addEventListener("click", handler);
+}
+
+export function onVocabularyRemoveRequested(handler) {
+  elements.vocabularyList.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-vocabulary-id]");
+    if (button) handler(button.dataset.vocabularyId);
+  });
+}
+
+export function showVocabularyView() {
+  vocabularyReturnView = elements.reader.hidden ? "list" : "reader";
+  elements.listSection.hidden = true;
+  elements.reader.hidden = true;
+  elements.vocabulary.hidden = false;
+  elements.vocabularyOpen.setAttribute("aria-expanded", "true");
+  elements.vocabulary.focus();
+}
+
+export function hideVocabularyView() {
+  elements.vocabulary.hidden = true;
+  elements.vocabularyOpen.setAttribute("aria-expanded", "false");
+  if (vocabularyReturnView === "reader" && currentArticle) {
+    elements.reader.hidden = false;
+  } else {
+    elements.listSection.hidden = false;
+  }
+  elements.vocabularyOpen.focus();
+}
+
+export function setVocabularyBusy(isBusy) {
+  elements.vocabulary.setAttribute("aria-busy", String(isBusy));
+  elements.vocabularyOpen.disabled = isBusy;
+  elements.vocabularyBack.disabled = isBusy;
+  if (isBusy) {
+    elements.vocabularyStatus.textContent = "Loading saved vocabulary…";
+  } else if (elements.vocabularyStatus.textContent === "Loading saved vocabulary…") {
+    elements.vocabularyStatus.textContent = "";
+  }
+}
+
+export function setVocabularyRemoveBusy(id, isBusy) {
+  const button = [...elements.vocabularyList.querySelectorAll("button[data-vocabulary-id]")]
+    .find((item) => item.dataset.vocabularyId === id);
+  if (!button) return;
+  button.disabled = isBusy;
+  button.textContent = isBusy ? "Removing…" : "Remove";
+}
+
+export function setVocabularyCount(count) {
+  elements.vocabularyCount.textContent = String(count);
+  elements.vocabularyCount.setAttribute("aria-label", `${count} saved ${count === 1 ? "term" : "terms"}`);
+}
+
+export function showVocabularyError(message, clearList = true) {
+  elements.vocabularyNotice.className = "notice notice--error";
+  elements.vocabularyNotice.textContent = message;
+  elements.vocabularyNotice.hidden = !message;
+  if (clearList) elements.vocabularyList.replaceChildren();
+}
+
+export function showVocabularyEmpty(message) {
+  elements.vocabularyNotice.className = "notice notice--empty";
+  elements.vocabularyNotice.textContent = message;
+  elements.vocabularyNotice.hidden = false;
+  elements.vocabularyList.replaceChildren();
+}
+
+export function renderVocabulary(records) {
+  elements.vocabularyNotice.hidden = true;
+  elements.vocabularyNotice.textContent = "";
+  const fragment = document.createDocumentFragment();
+  records.forEach((record) => {
+    const card = createElement("article", "vocabulary-card");
+    const heading = createElement("div", "vocabulary-card__heading");
+    const term = createElement("h3", "vocabulary-card__term", record.termZh || "Term unavailable");
+    const pinyin = createElement("p", "vocabulary-card__pinyin", record.pinyin || "Pinyin unavailable");
+    heading.append(term, pinyin);
+    const meaning = createElement("p", "vocabulary-card__meaning", record.meaningEn || "Meaning unavailable");
+    const context = createElement("blockquote", "vocabulary-card__context", record.contextSentenceZh || "Context unavailable");
+    const articleTitle = createElement("p", "vocabulary-card__article", record.articleTitleZh || "Article title unavailable");
+    const metadata = createElement(
+      "p",
+      "vocabulary-card__meta",
+      `${record.sourceName || "Source unavailable"} · ${formatPublicationDate(record.publishedAt)} · Saved ${formatPublicationDate(record.savedAt)}`,
+    );
+    const actions = createElement("div", "vocabulary-card__actions");
+    const original = createElement("a", "vocabulary-card__link", "Open original article ↗");
+    original.href = record.canonicalUrl;
+    original.target = "_blank";
+    original.rel = "noopener noreferrer";
+    const remove = createElement("button", "text-button vocabulary-card__remove", "Remove");
+    remove.type = "button";
+    remove.dataset.vocabularyId = record.id;
+    remove.setAttribute("aria-label", `Remove ${record.termZh || "this term"} from saved vocabulary`);
+    actions.append(original, remove);
+    card.append(heading, meaning, context, articleTitle, metadata, actions);
+    fragment.append(card);
+  });
+  elements.vocabularyList.replaceChildren(fragment);
+  elements.vocabularyStatus.textContent = `${records.length} saved ${records.length === 1 ? "term" : "terms"}.`;
 }
 
 elements.analysisTerms.addEventListener("click", (event) => {

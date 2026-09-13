@@ -135,8 +135,9 @@ The normal site URL uses live data. Adding `?preview=1` switches that browser se
 - `source.detail(id)` → `ArticleDetail`.
 - `source.analyze(article, learnerLevel)` → `ArticleAnalysis`.
 - `source.explain({ article, sentenceZh, learnerLevel })` → `SentenceExplanation`.
-- `source.save(record)` → reserved for Phase 3; rejects during foundation.
-- `source.list()` → `VocabularyRecord[]`; returns `[]` during foundation.
+- `source.save(record)` → `{ added: boolean, record: VocabularyRecord, records: VocabularyRecord[] }`.
+- `source.list()` → `VocabularyRecord[]`.
+- `source.remove(id)` → `{ removed: boolean, records: VocabularyRecord[] }`.
 
 All browser network and persistence operations enter through `source.js`.
 
@@ -177,3 +178,11 @@ This replaces the Phase 0 `yicai` identifier and migrates the source set from tw
 - Both routes accept JSON only, bound request sizes, treat article text as untrusted input, use server-only provider credentials, and expose no provider response or prompt text in errors.
 - `clearAnalysis(article)`, `getLearnerLevel()`, `onAnalysisRequested(handler)`, `onSentenceHelpRequested(handler)`, `renderAnalysis(article, analysis)`, `renderSentenceHelp(explanation)`, `setAnalysisBusy(isBusy)`, `setSentenceHelpBusy(isBusy)`, `showAnalysisError(message)`, and `showSentenceHelpError(message)` are additive `ui.js` exports.
 - Phase 2 adds DOM IDs `language-tools`, `learner-level`, `analyze-article`, `analysis-status`, `analysis-error`, `analysis-panel`, `analysis-gist`, `analysis-terms`, `sentence-tools`, `explain-sentence`, `selection-preview`, `sentence-status`, `sentence-error`, and `sentence-result`.
+
+### Phase 3 persistence and UI details
+
+- `source.save(record)`, `source.list()`, and `source.remove(id)` are the only vocabulary persistence boundary and use the versioned browser-storage contract above.
+- `source.save(record)` computes `id` from normalized `termZh + articleId + contextSentenceZh` and assigns `savedAt`; duplicate identities return the existing record without adding a row.
+- Invalid JSON, unknown storage versions, invalid records, duplicate stored identities, unavailable storage, and failed writes raise a readable recoverable error. Existing malformed data is never overwritten.
+- `onTermSaveRequested(handler)`, `setTermSaveBusy(index, isBusy)`, `showTermSaveResult(index, isSaved, message)`, `markSavedTerms(records)`, `onVocabularyRequested(handler)`, `onVocabularyBack(handler)`, `onVocabularyRemoveRequested(handler)`, `showVocabularyView()`, `hideVocabularyView()`, `setVocabularyBusy(isBusy)`, `setVocabularyRemoveBusy(id, isBusy)`, `setVocabularyCount(count)`, `showVocabularyError(message, clearList)`, `showVocabularyEmpty(message)`, and `renderVocabulary(records)` are additive `ui.js` exports.
+- Phase 3 adds DOM IDs `open-vocabulary`, `vocabulary-count`, `vocabulary-save-status`, `vocabulary`, `vocabulary-back`, `vocabulary-status`, `vocabulary-notice`, and `vocabulary-list`.

@@ -10,8 +10,77 @@ async function readSamples() {
   return sampleCache;
 }
 
-function unavailable(feature) {
-  throw new Error(`${feature}_AVAILABLE_IN_LATER_PHASE`);
+function storageError() {
+  return new Error("Saved vocabulary could not be read or updated. Your existing browser data was left unchanged.");
+}
+
+function requiredText(value) {
+  if (typeof value !== "string" || !value.trim()) throw storageError();
+  return value.trim();
+}
+
+function normalizedIdentityPart(value) {
+  return requiredText(value).normalize("NFKC").replace(/\s+/g, " ").toLocaleLowerCase();
+}
+
+function vocabularyId(record) {
+  return [record.termZh, record.articleId, record.contextSentenceZh]
+    .map((value) => encodeURIComponent(normalizedIdentityPart(value)))
+    .join(":");
+}
+
+function validDate(value, nullable = false) {
+  if (nullable && value === null) return null;
+  const text = requiredText(value);
+  if (Number.isNaN(new Date(text).getTime())) throw storageError();
+  return text;
+}
+
+function normalizeVocabularyRecord(value, options = {}) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw storageError();
+  const record = {
+    id: "",
+    termZh: requiredText(value.termZh),
+    pinyin: requiredText(value.pinyin),
+    meaningEn: requiredText(value.meaningEn),
+    contextSentenceZh: requiredText(value.contextSentenceZh),
+    articleId: requiredText(value.articleId),
+    articleTitleZh: requiredText(value.articleTitleZh),
+    sourceName: requiredText(value.sourceName),
+    canonicalUrl: requiredText(value.canonicalUrl),
+    publishedAt: validDate(value.publishedAt, true),
+    savedAt: options.forSave ? new Date().toISOString() : validDate(value.savedAt),
+  };
+  try {
+    if (new URL(record.canonicalUrl).protocol !== "https:") throw storageError();
+  } catch {
+    throw storageError();
+  }
+  record.id = vocabularyId(record);
+  if (!options.forSave && value.id !== record.id) throw storageError();
+  return record;
+}
+
+function readVocabularyStore() {
+  try {
+    const raw = localStorage.getItem(config.storageKey);
+    if (raw === null) return [];
+    const value = JSON.parse(raw);
+    if (!value || value.version !== config.storageVersion || !Array.isArray(value.records)) throw storageError();
+    const records = value.records.map((record) => normalizeVocabularyRecord(record));
+    if (new Set(records.map((record) => record.id)).size !== records.length) throw storageError();
+    return records;
+  } catch {
+    throw storageError();
+  }
+}
+
+function writeVocabularyStore(records) {
+  try {
+    localStorage.setItem(config.storageKey, JSON.stringify({ version: config.storageVersion, records }));
+  } catch {
+    throw storageError();
+  }
 }
 
 async function requestJson(url, options = {}) {
@@ -107,11 +176,25 @@ export const source = Object.freeze({
   },
 
   async save(record) {
-    void record;
-    unavailable("VOCABULARY_SAVE");
+    const candidate = normalizeVocabularyRecord(record, { forSave: true });
+    const records = readVocabularyStore();
+    const existing = records.find((item) => item.id === candidate.id);
+    if (existing) return { added: false, record: existing, records };
+    const nextRecords = [candidate, ...records];
+    writeVocabularyStore(nextRecords);
+    return { added: true, record: candidate, records: nextRecords };
   },
 
   async list() {
-    return [];
+    return readVocabularyStore();
+  },
+
+  async remove(id) {
+    const recordId = requiredText(id);
+    const records = readVocabularyStore();
+    const nextRecords = records.filter((record) => record.id !== recordId);
+    if (nextRecords.length === records.length) return { removed: false, records };
+    writeVocabularyStore(nextRecords);
+    return { removed: true, records: nextRecords };
   },
 });

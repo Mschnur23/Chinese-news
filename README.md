@@ -1,6 +1,6 @@
 # Daily Chinese Read
 
-A focused reading workspace for intermediate-to-advanced Mandarin learners. The current checkpoint is **Phase 2 — language scaffolding** with live public retrieval from 澎湃新闻, 证券时报, and 界面新闻, grounded article analysis, contextual term highlights, and selected-sentence help.
+A focused reading workspace for intermediate-to-advanced Mandarin learners. The current checkpoint is **Phase 3 — personal vocabulary** with live public retrieval from 澎湃新闻, 证券时报, and 界面新闻, grounded language support, and a contextual vocabulary list that persists in the current browser.
 
 ## Run locally
 
@@ -27,6 +27,8 @@ OPENAI_MODEL=gpt-5-mini
 Copy `.env.example` to `.env.local` for local development, then add the real key only to `.env.local` and the Vercel project environment.
 
 Discovery continues to use a transparent interest, recency, and topic heuristic. The model sees only the selected retrieved article, learner level, and bounded interests. Model output is checked server-side before it reaches the reader.
+
+Saved vocabulary uses versioned browser `localStorage`; it never leaves the device and requires no account or database. Duplicate identity is based on the normalized term, article ID, and original context sentence. If stored data is malformed or unavailable, the app reports a recoverable error and leaves the existing value untouched.
 
 ## Source limitations
 

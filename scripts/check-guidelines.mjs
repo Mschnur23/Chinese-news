@@ -71,7 +71,7 @@ const ui = await text("ui.js");
 });
 
 const source = await text("source.js");
-["load", "detail", "save", "list"].forEach((name) => {
+["load", "detail", "save", "list", "remove"].forEach((name) => {
   check(new RegExp(`async\\s+${name}\\s*\\(`).test(source), `source must expose async ${name}()`);
 });
 
@@ -104,6 +104,16 @@ const requiredIds = [
   "result-count",
 ];
 requiredIds.forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `index.html is missing protected DOM id: ${id}`));
+[
+  "open-vocabulary",
+  "vocabulary-count",
+  "vocabulary-save-status",
+  "vocabulary",
+  "vocabulary-back",
+  "vocabulary-status",
+  "vocabulary-notice",
+  "vocabulary-list",
+].forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `index.html is missing Phase 3 DOM id: ${id}`));
 
 const sample = JSON.parse(await text("data/sample.json"));
 check(Array.isArray(sample.articleSummaries) && sample.articleSummaries.length >= 3 && sample.articleSummaries.length <= 5, "Sample data must contain 3–5 article summaries");
@@ -116,6 +126,68 @@ const secretCandidates = [...availableFiles].filter((path) => /\.(?:js|json|md|h
 for (const path of secretCandidates) {
   check(!/\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/.test(await text(path)), `${path} appears to contain a hard-coded OpenAI API key`);
 }
+
+const memory = new Map();
+globalThis.location = { search: "" };
+globalThis.localStorage = {
+  getItem(key) { return memory.has(key) ? memory.get(key) : null; },
+  setItem(key, value) { memory.set(key, String(value)); },
+};
+globalThis.window = { location: { protocol: "http:" }, setTimeout, clearTimeout };
+const { config: checkedConfig } = await import(new URL("../config.js", import.meta.url));
+const { source: checkedSource } = await import(new URL("../source.js", import.meta.url));
+const firstSave = await checkedSource.save(sample.vocabularyRecord);
+const duplicateSave = await checkedSource.save(sample.vocabularyRecord);
+check(firstSave.added && firstSave.records.length === 1, "First vocabulary save must create one complete record");
+const vocabularyKeys = ["id", "termZh", "pinyin", "meaningEn", "contextSentenceZh", "articleId", "articleTitleZh", "sourceName", "canonicalUrl", "publishedAt", "savedAt"];
+check(vocabularyKeys.every((key) => Object.hasOwn(firstSave.record, key)), "Saved vocabulary records must contain every contracted key");
+check(!duplicateSave.added && duplicateSave.records.length === 1, "Duplicate vocabulary save must not create a second record");
+const secondRecord = {
+  ...sample.vocabularyRecord,
+  id: "",
+  termZh: "应用",
+  pinyin: "yìngyòng",
+  meaningEn: "application or deployment",
+  contextSentenceZh: "人工智能产业正在从技术探索走向规模化应用。",
+};
+const secondSave = await checkedSource.save(secondRecord);
+const removal = await checkedSource.remove(firstSave.record.id);
+check(secondSave.records.length === 2, "A distinct vocabulary record must save alongside the first");
+check(removal.removed && removal.records.length === 1 && removal.records[0].termZh === "应用", "Removing one vocabulary record must preserve the others");
+memory.set(checkedConfig.storageKey, "{malformed");
+let invalidStorageRejected = false;
+try {
+  await checkedSource.list();
+} catch {
+  invalidStorageRejected = memory.get(checkedConfig.storageKey) === "{malformed";
+}
+check(invalidStorageRejected, "Malformed vocabulary JSON must be rejected without being overwritten");
+const invalidStoredValues = [
+  JSON.stringify({ version: 999, records: [] }),
+  JSON.stringify({ version: checkedConfig.storageVersion, records: [{}] }),
+  JSON.stringify({ version: checkedConfig.storageVersion, records: [firstSave.record, firstSave.record] }),
+];
+for (const raw of invalidStoredValues) {
+  memory.set(checkedConfig.storageKey, raw);
+  let rejectedUnchanged = false;
+  try {
+    await checkedSource.list();
+  } catch {
+    rejectedUnchanged = memory.get(checkedConfig.storageKey) === raw;
+  }
+  check(rejectedUnchanged, "Invalid versioned vocabulary storage must be rejected without being overwritten");
+}
+globalThis.localStorage = {
+  getItem() { throw new Error("unavailable"); },
+  setItem() { throw new Error("unavailable"); },
+};
+let unavailableStorageRejected = false;
+try {
+  await checkedSource.list();
+} catch {
+  unavailableStorageRejected = true;
+}
+check(unavailableStorageRejected, "Unavailable browser storage must produce a recoverable error");
 
 if (failures.length) {
   console.error(`Technical guideline checks failed (${failures.length}):`);

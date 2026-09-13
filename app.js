@@ -1,5 +1,5 @@
-import { config } from "./config.js?v=high-resolution-images-1";
-import { source } from "./source.js?v=high-resolution-images-1";
+import { config } from "./config.js?v=anchored-word-help-1";
+import { source } from "./source.js?v=anchored-word-help-1";
 import {
   clearResults,
   clearReader,
@@ -63,7 +63,7 @@ import {
   showSentenceHelpError,
   showWordHelpError,
   revealReviewAnswer,
-} from "./ui.js?v=high-resolution-images-1";
+} from "./ui.js?v=anchored-word-help-1";
 
 let currentArticle = null;
 let articleRequestVersion = 0;
@@ -277,11 +277,11 @@ async function rateReview(rating) {
   }
 }
 
-async function lookupWord({ termZh, contextSentenceZh }) {
+async function lookupWord({ termZh, contextSentenceZh, anchor }) {
   if (!currentArticle) return;
   const article = currentArticle;
   const requestVersion = ++wordRequestVersion;
-  setWordHelpBusy(termZh, true);
+  setWordHelpBusy(termZh, true, anchor);
   try {
     const word = await source.lookupWord({ article, termZh, contextSentenceZh, learnerLevel: getLearnerLevel() });
     if (requestVersion !== wordRequestVersion || article !== currentArticle) return;

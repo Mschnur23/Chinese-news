@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=high-resolution-images-1";
+import { config } from "./config.js?v=anchored-word-help-1";
 
 const elements = {
   body: document.body,
@@ -71,6 +71,7 @@ let currentArticle = null;
 let currentAnalysis = null;
 let selectedSentence = "";
 let vocabularyReturnView = "list";
+let activeWordAnchor = null;
 
 function createElement(tagName, className, text) {
   const element = document.createElement(tagName);
@@ -105,8 +106,48 @@ function appendTappableText(parent, text, contextSentenceZh) {
     token.dataset.word = segment;
     token.dataset.context = contextSentenceZh;
     token.setAttribute("aria-label", `Explain ${segment}`);
+    token.setAttribute("aria-controls", "word-help");
+    token.setAttribute("aria-expanded", "false");
     parent.append(token);
   });
+}
+
+function positionWordHelp() {
+  if (!activeWordAnchor || elements.wordHelp.hidden || !activeWordAnchor.isConnected) return;
+  const anchorRect = activeWordAnchor.getBoundingClientRect();
+  const panelRect = elements.wordHelp.getBoundingClientRect();
+  const edge = 12;
+  const gap = 12;
+  let placement = "right";
+  let left = anchorRect.right + gap;
+  let top = anchorRect.top + (anchorRect.height - panelRect.height) / 2;
+
+  if (left + panelRect.width > window.innerWidth - edge) {
+    placement = "left";
+    left = anchorRect.left - panelRect.width - gap;
+  }
+  if (left < edge) {
+    placement = "below";
+    left = Math.min(
+      Math.max(edge, anchorRect.left),
+      Math.max(edge, window.innerWidth - panelRect.width - edge),
+    );
+    top = anchorRect.bottom + gap;
+  }
+
+  top = Math.min(
+    Math.max(edge, top),
+    Math.max(edge, window.innerHeight - panelRect.height - edge),
+  );
+  elements.wordHelp.dataset.placement = placement;
+  elements.wordHelp.style.left = `${Math.round(left)}px`;
+  elements.wordHelp.style.top = `${Math.round(top)}px`;
+}
+
+function setActiveWordAnchor(anchor) {
+  activeWordAnchor?.setAttribute("aria-expanded", "false");
+  activeWordAnchor = anchor;
+  activeWordAnchor?.setAttribute("aria-expanded", "true");
 }
 
 function formatPublicationDate(value) {
@@ -556,16 +597,19 @@ export function onWordHelpRequested(handler) {
   elements.readerContent.addEventListener("click", (event) => {
     const token = event.target.closest("button[data-word]");
     if (!token || !currentArticle) return;
-    handler({ termZh: token.dataset.word, contextSentenceZh: token.dataset.context });
+    setActiveWordAnchor(token);
+    handler({ termZh: token.dataset.word, contextSentenceZh: token.dataset.context, anchor: token });
   });
 }
 
-export function setWordHelpBusy(termZh, isBusy) {
+export function setWordHelpBusy(termZh, isBusy, anchor = activeWordAnchor) {
+  if (anchor) setActiveWordAnchor(anchor);
   elements.wordHelp.hidden = false;
   elements.wordHelpTerm.textContent = termZh;
   elements.wordHelpPinyin.textContent = "";
   elements.wordHelpMeaning.textContent = "";
   elements.wordHelpStatus.textContent = isBusy ? "Finding the meaning in this sentence…" : "";
+  positionWordHelp();
 }
 
 export function renderWordHelp(word) {
@@ -574,17 +618,22 @@ export function renderWordHelp(word) {
   elements.wordHelpPinyin.textContent = word.pinyin;
   elements.wordHelpMeaning.textContent = word.meaningEn;
   elements.wordHelpStatus.textContent = "";
-  elements.wordHelp.focus?.();
+  positionWordHelp();
 }
 
 export function showWordHelpError(message) {
   elements.wordHelp.hidden = false;
   elements.wordHelpMeaning.textContent = message;
   elements.wordHelpStatus.textContent = "";
+  positionWordHelp();
 }
 
 export function clearWordHelp() {
+  setActiveWordAnchor(null);
   elements.wordHelp.hidden = true;
+  elements.wordHelp.removeAttribute("data-placement");
+  elements.wordHelp.style.removeProperty("left");
+  elements.wordHelp.style.removeProperty("top");
   elements.wordHelpTerm.textContent = "";
   elements.wordHelpPinyin.textContent = "";
   elements.wordHelpMeaning.textContent = "";
@@ -592,6 +641,15 @@ export function clearWordHelp() {
 }
 
 elements.wordHelpClose.addEventListener("click", clearWordHelp);
+window.addEventListener("resize", positionWordHelp);
+window.addEventListener("scroll", positionWordHelp, { passive: true });
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !elements.wordHelp.hidden) {
+    const anchor = activeWordAnchor;
+    clearWordHelp();
+    anchor?.focus();
+  }
+});
 
 export function clearReader() {
   elements.reader.hidden = true;

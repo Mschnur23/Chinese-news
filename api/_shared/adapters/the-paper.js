@@ -32,7 +32,7 @@ export const thePaperAdapter = Object.freeze({
           titleZh: cleanText(value.name),
           sourceId: definition.id,
           sourceName: definition.name,
-          canonicalUrl: `https://www.thepaper.cn/newsDetail_forward_${value.contId}`,
+          canonicalUrl: definition.articleUrl(value.contId),
           publishedAt: toIsoDate(value.pubTime || value.publishTime),
           description: truncate(value.summary || value.desc || value.nodeInfo?.desc || "", 180),
         });
@@ -46,7 +46,7 @@ export const thePaperAdapter = Object.freeze({
 
   async detail(id) {
     const numericId = requireArticleId(id, definition.id);
-    const url = `https://www.thepaper.cn/newsDetail_forward_${numericId}`;
+    const url = definition.articleUrl(numericId);
     const { html, finalUrl } = await fetchPublisherHtml(url, definition.hosts);
     const data = nextData(html);
     const content = data.props?.pageProps?.detailData?.contentDetail;

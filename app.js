@@ -40,6 +40,11 @@ const previewMessages = Object.freeze({
   error: "We couldn’t prepare today’s reading. Please try again.",
 });
 
+function readableError(error, fallback) {
+  const message = typeof error?.message === "string" ? error.message.trim() : "";
+  return message && !/^[A-Z0-9_]+$/.test(message) ? message : fallback;
+}
+
 async function loadReading() {
   const previewState = config.mode === "sample" ? getPreviewState() : "success";
   setBusy(true);
@@ -48,7 +53,7 @@ async function loadReading() {
   showNotice("");
 
   try {
-    if (previewState === "error") throw new Error("PREVIEW_ERROR");
+    if (previewState === "error") throw new Error(previewMessages.error);
     const result = await source.load({
       limit: config.displayedResultLimit,
       interests: config.defaultInterests,
@@ -65,7 +70,7 @@ async function loadReading() {
     showNotice(previewState === "partial" ? result.warnings[0] : "");
     setStatus(`Ready: ${result.items.length} recent articles selected for you.`);
   } catch (error) {
-    showError(error.message || previewMessages.error);
+    showError(readableError(error, previewMessages.error));
     setStatus("Today’s reading could not be loaded.");
   } finally {
     setBusy(false);
@@ -85,7 +90,7 @@ async function openArticle(id) {
     currentArticle = article;
     renderArticle(article);
   } catch (error) {
-    showArticleError(error.message || "This article could not be prepared. Choose another article or try again.");
+    showArticleError(readableError(error, "This article could not be prepared. Choose another article or try again."));
   } finally {
     setArticleBusy(false);
   }
@@ -108,7 +113,7 @@ async function prepareAnalysis() {
     renderAnalysis(article, analysis);
   } catch (error) {
     if (requestVersion !== analysisRequestVersion) return;
-    showAnalysisError(error.message || "The language guide could not be prepared. The original article is still available below.");
+    showAnalysisError(readableError(error, "The language guide could not be prepared. The original article is still available below."));
   } finally {
     if (requestVersion === analysisRequestVersion) setAnalysisBusy(false);
   }
@@ -139,7 +144,7 @@ async function explainSentence(sentenceZh) {
     renderSentenceHelp(explanation);
   } catch (error) {
     if (requestVersion !== sentenceRequestVersion) return;
-    showSentenceHelpError(error.message || "That sentence could not be explained. Select article text and try again.");
+    showSentenceHelpError(readableError(error, "That sentence could not be explained. Select article text and try again."));
   } finally {
     if (requestVersion === sentenceRequestVersion) setSentenceHelpBusy(false);
   }

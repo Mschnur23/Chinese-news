@@ -59,7 +59,7 @@ export const source = Object.freeze({
     }
 
     const query = new URLSearchParams({ interests: (params.interests || []).join(",") });
-    const payload = await requestJson(`/api/articles?${query}`);
+    const payload = await requestJson(`${config.apiRoutes.articles}?${query}`);
     return { items: payload.data.items, warnings: payload.warnings };
   },
 
@@ -70,7 +70,7 @@ export const source = Object.freeze({
       if (!article) throw new Error("Article not found.");
       return article;
     }
-    const payload = await requestJson(`/api/article?id=${encodeURIComponent(id)}`);
+    const payload = await requestJson(`${config.apiRoutes.article}?id=${encodeURIComponent(id)}`);
     return payload.data;
   },
 
@@ -81,7 +81,7 @@ export const source = Object.freeze({
       await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
       return samples.articleAnalysis;
     }
-    const payload = await requestJson("/api/analyze", {
+    const payload = await requestJson(config.apiRoutes.analyze, {
       method: "POST",
       timeoutMs: config.analysisRequestTimeoutMs,
       body: { article, learnerLevel, interests: config.defaultInterests },
@@ -98,7 +98,7 @@ export const source = Object.freeze({
       await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
       return { ...samples.sentenceExplanation, sentenceZh };
     }
-    const payload = await requestJson("/api/explain", {
+    const payload = await requestJson(config.apiRoutes.explain, {
       method: "POST",
       timeoutMs: config.analysisRequestTimeoutMs,
       body: { article, sentenceZh, learnerLevel },
@@ -106,7 +106,8 @@ export const source = Object.freeze({
     return payload.data;
   },
 
-  async save() {
+  async save(record) {
+    void record;
     unavailable("VOCABULARY_SAVE");
   },
 

@@ -19,6 +19,7 @@ export const serverConfig = Object.freeze({
       homepageUrl: "https://www.thepaper.cn/",
       description: "A Shanghai-based Chinese news publication known for current affairs, public policy, and in-depth reporting.",
       discoveryUrl: "https://www.thepaper.cn/",
+      articleUrl: (numericId) => `https://www.thepaper.cn/newsDetail_forward_${numericId}`,
       hosts: Object.freeze(["www.thepaper.cn", "thepaper.cn"]),
     }),
     stcn: Object.freeze({
@@ -27,6 +28,7 @@ export const serverConfig = Object.freeze({
       homepageUrl: "https://www.stcn.com/",
       description: "The official website of Securities Times, focused on China’s capital markets, companies, finance, and economic policy.",
       discoveryUrl: "https://www.stcn.com/",
+      articleUrl: (numericId) => `https://www.stcn.com/article/detail/${numericId}.html`,
       hosts: Object.freeze(["www.stcn.com", "stcn.com"]),
     }),
     jiemian: Object.freeze({
@@ -35,6 +37,7 @@ export const serverConfig = Object.freeze({
       homepageUrl: "https://www.jiemian.com/",
       description: "A Shanghai-based business and general news publication covering companies, finance, technology, and public affairs.",
       discoveryUrl: "https://www.jiemian.com/",
+      articleUrl: (numericId) => `https://www.jiemian.com/article/${numericId}.html`,
       hosts: Object.freeze(["www.jiemian.com", "jiemian.com"]),
     }),
   }),

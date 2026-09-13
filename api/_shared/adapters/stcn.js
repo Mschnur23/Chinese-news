@@ -26,7 +26,7 @@ export const stcnAdapter = Object.freeze({
         titleZh,
         sourceId: definition.id,
         sourceName: definition.name,
-        canonicalUrl: `https://www.stcn.com/article/detail/${numericId}.html`,
+        canonicalUrl: definition.articleUrl(numericId),
         publishedAt: toIsoDate(dateText),
         description: truncate(description, 180),
       });
@@ -37,7 +37,7 @@ export const stcnAdapter = Object.freeze({
 
   async detail(id) {
     const numericId = requireArticleId(id, definition.id);
-    const { html, finalUrl } = await fetchPublisherHtml(`https://www.stcn.com/article/detail/${numericId}.html`, definition.hosts);
+    const { html, finalUrl } = await fetchPublisherHtml(definition.articleUrl(numericId), definition.hosts);
     const titleZh = firstText(html, /<div[^>]*class=["'][^"']*detail-title[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
     const info = between(html, /<div[^>]*class=["'][^"']*detail-info[^"']*["'][^>]*>/i, /<div[^>]*class=["'][^"']*detail-content-wrapper/i);
     const content = between(html, /<div[^>]*class=["'][^"']*detail-content["'][^>]*>/i, /<div[^>]*class=["'][^"']*detail-content-editor/i);

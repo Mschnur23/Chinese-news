@@ -26,7 +26,7 @@ export const jiemianAdapter = Object.freeze({
         titleZh,
         sourceId: definition.id,
         sourceName: definition.name,
-        canonicalUrl: `https://www.jiemian.com/article/${numericId}.html`,
+        canonicalUrl: definition.articleUrl(numericId),
         publishedAt: toIsoDate(dateText),
         description: truncate(description, 180),
       });
@@ -39,7 +39,7 @@ export const jiemianAdapter = Object.freeze({
 
   async detail(id) {
     const numericId = requireArticleId(id, definition.id);
-    const { html, finalUrl } = await fetchPublisherHtml(`https://www.jiemian.com/article/${numericId}.html`, definition.hosts);
+    const { html, finalUrl } = await fetchPublisherHtml(definition.articleUrl(numericId), definition.hosts);
     if (/var\s+is_pay\s*=\s*['"]1['"]/.test(html) || /class=["'][^"']*paywall/i.test(html)) {
       throw new PublicError("ARTICLE_PAYWALLED", "This 界面新闻 article requires paid access and cannot be shown here.", 422);
     }

@@ -1,6 +1,14 @@
+const previewMode = new URLSearchParams(globalThis.location?.search || "").get("preview") === "1";
+
 export const config = Object.freeze({
-  mode: "live",
+  mode: previewMode ? "sample" : "live",
   sampleDataPath: "./data/sample.json",
+  apiRoutes: Object.freeze({
+    articles: "/api/articles",
+    article: "/api/article",
+    analyze: "/api/analyze",
+    explain: "/api/explain",
+  }),
   sampleDelayMs: 450,
   activeSourceIds: Object.freeze(["the-paper", "stcn", "jiemian"]),
   candidateLimitPerSource: 10,
@@ -23,7 +31,7 @@ export const config = Object.freeze({
   storageVersion: 1,
   featureFlags: Object.freeze({
     liveRetrieval: true,
-    showPreviewStates: false,
+    showPreviewStates: previewMode,
     languageScaffolding: true,
     vocabulary: false,
   }),

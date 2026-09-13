@@ -127,6 +127,8 @@ Keys are always present. Public errors contain no stack traces, provider output,
 
 Only `ui.js` may read from or write to the DOM.
 
+The normal site URL uses live data. Adding `?preview=1` switches that browser session to hand-written sample data and reveals the success, partial-source, empty, and error controls without editing configuration files.
+
 ### `source.js` public methods
 
 - `source.load(params)` → `{ items: ArticleSummary[], warnings: string[] }`. Foundation-only test parameters may simulate an isolated source failure; they are removed when Phase 1 replaces sample loading.
@@ -137,6 +139,8 @@ Only `ui.js` may read from or write to the DOM.
 - `source.list()` → `VocabularyRecord[]`; returns `[]` during foundation.
 
 All browser network and persistence operations enter through `source.js`.
+
+External URLs, route paths, timeouts, result limits, and feature switches live only in `config.js` or the server-only `api/_shared/server-config.js`.
 
 ### Learner levels
 

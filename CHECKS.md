@@ -35,3 +35,5 @@ Run this list after every phase. Record failures; never remove a previously pass
 31. Term highlights never inject model output as HTML; overlapping terms remain readable and keyboard accessible.
 32. `/api/analyze` and `/api/explain` accept JSON only, bound request sizes, and return safe public errors when AI is unconfigured or unavailable.
 33. Model prompts explicitly delimit retrieved article text as untrusted data, and provider credentials remain server-side.
+34. `npm run check` passes the Technical Guidelines architecture, configuration, contract, sample-data, and secret-safety checks.
+35. Opening `/?preview=1` exposes success, partial-source, empty, error, and busy states without changing the live default.

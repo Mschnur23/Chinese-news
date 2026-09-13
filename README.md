@@ -38,7 +38,13 @@ Discovery continues to use a transparent interest, recency, and topic heuristic.
 
 ## Verify
 
-Complete the cumulative manual list in `CHECKS.md` at desktop width, at 375 px, and at 200% text zoom. Foundation test states remain available by temporarily switching `config.js` to `sample` mode and enabling `showPreviewStates`; restore live mode afterward.
+Run the dependency-free architecture and contract checker first:
+
+```sh
+npm run check
+```
+
+Then complete the cumulative manual list in `CHECKS.md` at desktop width, at 375 px, and at 200% text zoom. Foundation test states are available at `/?preview=1`; this switches only that browser session to hand-written sample data and reveals the success, partial-source, empty, and error controls. The normal URL always stays in live mode.
 
 ## Deployment
 
@@ -54,3 +60,16 @@ The target is Vercel. A deployment must contain no secret values and must be ver
 - `api/analyze.js` and `api/explain.js` own grounded model requests; prompts, provider configuration, and credentials remain server-side.
 - Publisher-specific parsing stays in separate modules under `api/_shared/adapters/`.
 - `CONTRACTS.md` records stable interfaces; changes under its protected heading require approval.
+
+## Rules for every later phase
+
+1. Read `CONTRACTS.md` before changing any file. Do not change anything under `DO NOT CHANGE WITHOUT ASKING` without stopping to ask first.
+2. Work additively. Extend existing functions instead of renaming them or reorganizing the file layout.
+3. Implement one phase at a time; do not pull later-phase features forward.
+4. Put every new browser-safe tunable in `config.js`, and every server-only tunable in `api/_shared/server-config.js`.
+5. Put every new browser data or persistence operation inside a `source.js` method.
+6. Route every new visible state through `ui.js`; other browser modules never access the DOM.
+7. Read secrets server-side from environment variables only. Never place them in browser code, commits, logs, or JSON responses.
+8. Before committing, run `npm run check` and the full `CHECKS.md` list.
+9. If something breaks, reproduce one symptom, change one thing, and retest; do not redesign the application.
+10. At the end of a phase, report files changed, dependencies added, checks passed, and unresolved items, then stop.

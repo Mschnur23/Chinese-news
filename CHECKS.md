@@ -12,7 +12,7 @@ Run this list after every phase. Record failures; never remove a previously pass
 8. One source may fail while valid results from the other source still render with a warning.
 9. Selecting an article renders clean Chinese text and its source link. *(Phase 1)*
 10. A blocked, paywalled, or invalid article produces a readable fallback and is not misrepresented as readable. *(Phase 1)*
-11. Analysis returns a two-sentence gist and exactly 10 unique, article-grounded terms. *(Phase 2)*
+11. Analysis returns a two-sentence gist and the level-specific number of unique, article-grounded terms: exactly 20 for Intermediate and exactly 10 for Advanced. *(Phase 2)*
 12. Invalid or ungrounded analysis is rejected and the original article remains readable. *(Phase 2)*
 13. Each highlighted term works by hover, keyboard focus, and tap. *(Phase 2)*
 14. Sentence help accepts article text and rejects text not found in the article. *(Phase 2)*

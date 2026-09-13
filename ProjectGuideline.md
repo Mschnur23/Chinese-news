@@ -16,7 +16,7 @@ The MVP succeeds when a user can:
 
 1. Open the site and see 3–5 recent, relevant articles from three trusted, non-paywalled Chinese-language sources.
 2. Choose one and read clean original Chinese text inside the app.
-3. Use a short English gist and exactly 10 highlighted, likely-difficult or useful terms, each with pinyin and a contextual English meaning.
+3. Use a short English gist and level-specific highlighted vocabulary: exactly 20 terms for Intermediate or exactly 10 for Advanced, each with pinyin and a contextual English meaning.
 4. Request help for a selected difficult sentence.
 5. Save useful terms to a personal vocabulary list that survives a browser refresh.
 
@@ -110,11 +110,11 @@ Turn the selected native article into a level-appropriate reading experience whi
 - Let the user choose an approximate Mandarin level from a small fixed set.
 - For the selected article, make one structured model request that returns:
   - a two-sentence English gist;
-  - exactly 10 useful or likely-difficult Chinese words or phrases;
+  - exactly 20 useful or likely-difficult Chinese words or phrases for Intermediate, or exactly 10 for Advanced;
   - pinyin for each term;
   - a concise English meaning specific to this article;
   - the exact occurrence and containing sentence from the retrieved text.
-- Show the 10 terms in a compact preview above the article.
+- Show the level-specific terms in a compact preview above the article.
 - Highlight exact occurrences of those same terms in the article.
 - On hover, keyboard focus, or tap, show pinyin and contextual meaning.
 - Let the user select a difficult sentence and request a natural English translation plus a short grammar or context explanation.
@@ -130,11 +130,11 @@ Turn the selected native article into a level-appropriate reading experience whi
 
 #### Scope rule
 
-The MVP guarantees interaction only for the 10 model-selected terms. Arbitrary-word segmentation and dictionary lookup are not required. Sentence help is available only after deliberate user selection; there is no full side-by-side article translation.
+The MVP guarantees interaction only for the model-selected terms (20 for Intermediate or 10 for Advanced). Arbitrary-word segmentation and dictionary lookup are not required. Sentence help is available only after deliberate user selection; there is no full side-by-side article translation.
 
 #### Acceptance criteria
 
-- A valid analysis contains a two-sentence gist and exactly 10 unique terms.
+- A valid analysis contains a two-sentence gist and exactly 20 unique terms for Intermediate or exactly 10 for Advanced.
 - Every term and context excerpt can be matched to the article text before it is highlighted.
 - Hover, focus, and tap expose the same definition content.
 - Sentence help operates only on user-selected article text and fails with a readable message.

@@ -2,6 +2,7 @@ import { PublicError } from "./http.js";
 import { serverConfig } from "./server-config.js";
 
 const allowedLearnerLevels = new Set(["Intermediate", "Advanced"]);
+const termCountsByLearnerLevel = Object.freeze({ Intermediate: 20, Advanced: 10 });
 const articleIdPattern = /^(the-paper|stcn|jiemian):\d+$/;
 
 function requireString(value, field, maximumLength) {
@@ -55,6 +56,10 @@ export function validateLearnerLevel(value) {
     throw new PublicError("LEARNER_LEVEL_INVALID", "Choose Intermediate or Advanced Mandarin.", 400);
   }
   return value;
+}
+
+export function termCountForLearnerLevel(value) {
+  return termCountsByLearnerLevel[validateLearnerLevel(value)];
 }
 
 export function validateInterests(value) {
@@ -126,11 +131,17 @@ function validateModelString(value, field, maximumLength = 1200) {
   return value.trim();
 }
 
-export function validateAnalysisOutput(value, article) {
+export function validateAnalysisOutput(value, article, expectedTermCount = 10) {
   if (!value || typeof value !== "object" || value.articleId !== article.id) {
     throw new PublicError("MODEL_OUTPUT_INVALID", "The language guide did not match this article. Please retry.", 502);
   }
-  if (!Array.isArray(value.gistEn) || value.gistEn.length !== 2 || !Array.isArray(value.terms) || value.terms.length !== 10) {
+  if (
+    ![10, 20].includes(expectedTermCount)
+    || !Array.isArray(value.gistEn)
+    || value.gistEn.length !== 2
+    || !Array.isArray(value.terms)
+    || value.terms.length !== expectedTermCount
+  ) {
     throw new PublicError("MODEL_OUTPUT_INVALID", "The language guide was incomplete. Please retry.", 502);
   }
 
@@ -181,32 +192,35 @@ export function validateExplanationOutput(value, sentenceZh) {
   };
 }
 
-export const analysisSchema = Object.freeze({
-  type: "object",
-  additionalProperties: false,
-  required: ["articleId", "gistEn", "terms"],
-  properties: {
-    articleId: { type: "string" },
-    gistEn: { type: "array", minItems: 2, maxItems: 2, items: { type: "string" } },
-    terms: {
-      type: "array",
-      minItems: 10,
-      maxItems: 10,
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["termZh", "pinyin", "meaningEn", "exactOccurrence", "contextSentenceZh"],
-        properties: {
-          termZh: { type: "string" },
-          pinyin: { type: "string" },
-          meaningEn: { type: "string" },
-          exactOccurrence: { type: "string" },
-          contextSentenceZh: { type: "string" },
+export function analysisSchemaForTermCount(termCount) {
+  if (![10, 20].includes(termCount)) throw new Error("Unsupported analysis term count");
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["articleId", "gistEn", "terms"],
+    properties: {
+      articleId: { type: "string" },
+      gistEn: { type: "array", minItems: 2, maxItems: 2, items: { type: "string" } },
+      terms: {
+        type: "array",
+        minItems: termCount,
+        maxItems: termCount,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["termZh", "pinyin", "meaningEn", "exactOccurrence", "contextSentenceZh"],
+          properties: {
+            termZh: { type: "string" },
+            pinyin: { type: "string" },
+            meaningEn: { type: "string" },
+            exactOccurrence: { type: "string" },
+            contextSentenceZh: { type: "string" },
+          },
         },
       },
     },
-  },
-});
+  };
+}
 
 export const explanationSchema = Object.freeze({
   type: "object",

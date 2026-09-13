@@ -93,7 +93,17 @@
       { "termZh": "逐步", "pinyin": "zhúbù", "meaningEn": "gradually", "exactOccurrence": "逐步", "contextSentenceZh": "在制造、医疗和金融等行业，应用场景正在逐步清晰。" },
       { "termZh": "与此同时", "pinyin": "yǔcǐ tóngshí", "meaningEn": "at the same time", "exactOccurrence": "与此同时", "contextSentenceZh": "与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。" },
       { "termZh": "投入回报", "pinyin": "tóurù huíbào", "meaningEn": "return on investment", "exactOccurrence": "投入回报", "contextSentenceZh": "与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。" },
-      { "termZh": "现实问题", "pinyin": "xiànshí wèntí", "meaningEn": "practical challenge", "exactOccurrence": "现实问题", "contextSentenceZh": "与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。" }
+      { "termZh": "现实问题", "pinyin": "xiànshí wèntí", "meaningEn": "practical challenge", "exactOccurrence": "现实问题", "contextSentenceZh": "与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。" },
+      { "termZh": "人工智能产业", "pinyin": "réngōng zhìnéng chǎnyè", "meaningEn": "artificial intelligence industry", "exactOccurrence": "人工智能产业", "contextSentenceZh": "人工智能产业正在从技术探索走向规模化应用。" },
+      { "termZh": "技术探索", "pinyin": "jìshù tànsuǒ", "meaningEn": "technological exploration", "exactOccurrence": "技术探索", "contextSentenceZh": "人工智能产业正在从技术探索走向规模化应用。" },
+      { "termZh": "越来越多", "pinyin": "yuèláiyuè duō", "meaningEn": "more and more", "exactOccurrence": "越来越多", "contextSentenceZh": "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。" },
+      { "termZh": "真正改善", "pinyin": "zhēnzhèng gǎishàn", "meaningEn": "genuinely improve", "exactOccurrence": "真正改善", "contextSentenceZh": "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。" },
+      { "termZh": "形成", "pinyin": "xíngchéng", "meaningEn": "to form or create", "exactOccurrence": "形成", "contextSentenceZh": "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。" },
+      { "termZh": "制造", "pinyin": "zhìzào", "meaningEn": "manufacturing", "exactOccurrence": "制造", "contextSentenceZh": "在制造、医疗和金融等行业，应用场景正在逐步清晰。" },
+      { "termZh": "医疗", "pinyin": "yīliáo", "meaningEn": "healthcare", "exactOccurrence": "医疗", "contextSentenceZh": "在制造、医疗和金融等行业，应用场景正在逐步清晰。" },
+      { "termZh": "金融", "pinyin": "jīnróng", "meaningEn": "finance", "exactOccurrence": "金融", "contextSentenceZh": "在制造、医疗和金融等行业，应用场景正在逐步清晰。" },
+      { "termZh": "数据质量", "pinyin": "shùjù zhìliàng", "meaningEn": "data quality", "exactOccurrence": "数据质量", "contextSentenceZh": "与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。" },
+      { "termZh": "人才结构", "pinyin": "réncái jiégòu", "meaningEn": "workforce composition", "exactOccurrence": "人才结构", "contextSentenceZh": "与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。" }
     ]
   },
   "sentenceExplanation": {

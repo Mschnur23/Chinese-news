@@ -1,5 +1,5 @@
-import { config } from "./config.js";
-import { source } from "./source.js";
+import { config } from "./config.js?v=level-vocabulary-2";
+import { source } from "./source.js?v=level-vocabulary-2";
 import {
   clearResults,
   clearReader,
@@ -44,7 +44,7 @@ import {
   showError,
   showNotice,
   showSentenceHelpError,
-} from "./ui.js";
+} from "./ui.js?v=level-vocabulary-2";
 
 let currentArticle = null;
 let articleRequestVersion = 0;

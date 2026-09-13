@@ -14,6 +14,7 @@ export const config = Object.freeze({
   candidateLimitPerSource: 10,
   displayedResultLimit: 5,
   learnerLevels: Object.freeze(["Intermediate", "Advanced"]),
+  analysisTermCounts: Object.freeze({ Intermediate: 20, Advanced: 10 }),
   defaultLearnerLevel: "Advanced",
   defaultInterests: Object.freeze([
     "人工智能",

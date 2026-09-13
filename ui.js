@@ -1,3 +1,5 @@
+import { config } from "./config.js?v=level-vocabulary-2";
+
 const elements = {
   body: document.body,
   loadButton: document.querySelector("#load-reading"),
@@ -23,6 +25,7 @@ const elements = {
   analysisPanel: document.querySelector("#analysis-panel"),
   analysisGist: document.querySelector("#analysis-gist"),
   analysisTerms: document.querySelector("#analysis-terms"),
+  analysisTermCount: document.querySelector("#analysis-term-count"),
   sentenceTools: document.querySelector("#sentence-tools"),
   explainButton: document.querySelector("#explain-sentence"),
   selectionPreview: document.querySelector("#selection-preview"),
@@ -294,12 +297,13 @@ export function clearAnalysis(article = currentArticle) {
 }
 
 export function setAnalysisBusy(isBusy) {
+  const termCount = config.analysisTermCounts[elements.learnerLevel.value];
   elements.analyzeButton.disabled = isBusy;
   elements.learnerLevel.disabled = isBusy;
   elements.analyzeButton.textContent = isBusy ? "Preparing…" : "Prepare language guide";
   if (isBusy) {
-    elements.analysisStatus.textContent = "Finding 10 useful terms and checking each one against the article…";
-  } else if (elements.analysisStatus.textContent.startsWith("Finding 10")) {
+    elements.analysisStatus.textContent = `Finding ${termCount} useful terms and checking each one against the article…`;
+  } else if (elements.analysisStatus.textContent.startsWith("Finding ")) {
     elements.analysisStatus.textContent = "";
   }
 }
@@ -313,6 +317,7 @@ export function renderAnalysis(article, analysis) {
   currentAnalysis = analysis;
   elements.analysisGist.replaceChildren();
   analysis.gistEn.forEach((sentence) => elements.analysisGist.append(createElement("p", "", sentence)));
+  elements.analysisTermCount.textContent = `${analysis.terms.length} terms in context`;
 
   const termFragment = document.createDocumentFragment();
   analysis.terms.forEach((term, index) => {

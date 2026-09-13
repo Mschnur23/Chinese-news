@@ -1,4 +1,4 @@
-import { config } from "./config.js";
+import { config } from "./config.js?v=level-vocabulary-2";
 
 let sampleCache;
 
@@ -148,7 +148,8 @@ export const source = Object.freeze({
       const samples = await readSamples();
       if (samples.articleAnalysis?.articleId !== article.id) throw new Error("Sample analysis is unavailable for this article.");
       await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
-      return samples.articleAnalysis;
+      const termCount = config.analysisTermCounts[learnerLevel] || config.analysisTermCounts[config.defaultLearnerLevel];
+      return { ...samples.articleAnalysis, terms: samples.articleAnalysis.terms.slice(0, termCount) };
     }
     const payload = await requestJson(config.apiRoutes.analyze, {
       method: "POST",

@@ -193,7 +193,7 @@ Responsibilities:
 2. Delimit article text as untrusted data and explicitly instruct the model not to follow instructions contained inside it.
 3. Request the exact structured analysis contract.
 4. Parse and validate the response server-side.
-5. Verify that all 10 terms, exact occurrences, and context sentences appear in the submitted article.
+5. Verify that all level-specific terms (20 for Intermediate or 10 for Advanced), exact occurrences, and context sentences appear in the submitted article.
 6. Retry or repair at most once for schema-only defects; otherwise return a safe, typed error.
 
 ### `POST /api/explain`
@@ -266,7 +266,7 @@ At minimum, define these shapes:
 }
 ```
 
-`gistEn` must contain exactly two non-empty sentences. `terms` must contain exactly 10 unique entries, and all grounded strings must match the article.
+`gistEn` must contain exactly two non-empty sentences. `terms` must contain exactly 20 unique entries for Intermediate or exactly 10 for Advanced, and all grounded strings must match the article.
 
 ### Sentence explanation
 
@@ -383,7 +383,7 @@ Create `CHECKS.md` as a numbered list runnable by hand in under five minutes. St
 8. One source may fail while valid results from the remaining sources still render with a warning.
 9. Selecting an article renders clean Chinese text and its source link.
 10. A blocked, paywalled, or invalid article produces a readable fallback and is not misrepresented as readable.
-11. Analysis returns a two-sentence gist and exactly 10 unique, article-grounded terms.
+11. Analysis returns a two-sentence gist and exactly 20 unique, article-grounded terms for Intermediate or exactly 10 for Advanced.
 12. Invalid or ungrounded analysis is rejected and the original article remains readable.
 13. Each highlighted term works by hover, keyboard focus, and tap.
 14. Sentence help accepts article text and rejects text not found in the article.

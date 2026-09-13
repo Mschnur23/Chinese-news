@@ -184,14 +184,14 @@ The reader level changes how much vocabulary is proactively highlighted.
 
 ### Intermediate
 
-- Highlight up to roughly 18 useful or likely difficult words/phrases.
+- Highlight exactly 20 useful or likely difficult words/phrases.
 - Include some moderately common vocabulary that may still create reading friction.
 - Definitions can be slightly more explicit.
 - Include useful idioms, business terms, policy terms, and grammar-heavy phrases where appropriate.
 
 ### Advanced
 
-- Highlight up to roughly 10 genuinely difficult or especially useful words/phrases.
+- Highlight exactly 10 genuinely difficult or especially useful words/phrases.
 - Skip vocabulary an advanced learner would normally be expected to know.
 - Focus on idiomatic, formal, policy, business, literary, or context-specific usage.
 - Keep definitions shorter and more contextual.

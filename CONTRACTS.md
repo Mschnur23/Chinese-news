@@ -57,7 +57,7 @@ This file records the interfaces that later phases must preserve. All documented
 }
 ```
 
-`gistEn` contains exactly two non-empty sentences. `terms` contains exactly 10 unique entries. Every `termZh`, `exactOccurrence`, and `contextSentenceZh` must be present in the selected article.
+`gistEn` contains exactly two non-empty sentences. `terms` contains exactly 20 unique entries for `Intermediate` and exactly 10 for `Advanced`. Every `termZh`, `exactOccurrence`, and `contextSentenceZh` must be present in the selected article.
 
 ### Sentence explanation
 

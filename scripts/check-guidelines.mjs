@@ -117,6 +117,7 @@ requiredIds.forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `in
   "mobile-vocabulary",
   "home-intro",
   "reading-controls",
+  "analysis-term-count",
 ].forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `index.html is missing Phase 3 DOM id: ${id}`));
 
 const sample = JSON.parse(await text("data/sample.json"));
@@ -125,6 +126,30 @@ const summaryKeys = ["id", "titleZh", "sourceId", "sourceName", "canonicalUrl", 
 for (const [index, item] of (sample.articleSummaries || []).entries()) {
   summaryKeys.forEach((key) => check(Object.hasOwn(item, key), `Sample article summary ${index + 1} omits ${key}`));
 }
+
+const language = await import(new URL("../api/_shared/language.js", import.meta.url));
+check(language.termCountForLearnerLevel("Intermediate") === 20, "Intermediate analysis must request exactly 20 terms");
+check(language.termCountForLearnerLevel("Advanced") === 10, "Advanced analysis must request exactly 10 terms");
+const intermediateSchema = language.analysisSchemaForTermCount(20);
+const advancedSchema = language.analysisSchemaForTermCount(10);
+check(intermediateSchema.properties.terms.minItems === 20 && intermediateSchema.properties.terms.maxItems === 20, "Intermediate schema must require exactly 20 terms");
+check(advancedSchema.properties.terms.minItems === 10 && advancedSchema.properties.terms.maxItems === 10, "Advanced schema must require exactly 10 terms");
+const sampleTerms = sample.articleAnalysis?.terms || [];
+const sampleArticle = sample.articleDetails?.find((item) => item.id === sample.articleAnalysis?.articleId);
+check(sampleTerms.length === 20, "Sample Intermediate analysis must contain exactly 20 terms");
+check(new Set(sampleTerms.map((term) => term.termZh)).size === 20, "Sample Intermediate analysis terms must be unique");
+check(sampleTerms.every((term) => sampleArticle?.bodyText.includes(term.termZh) && sampleArticle.bodyText.includes(term.exactOccurrence) && sampleArticle.bodyText.includes(term.contextSentenceZh)), "Every sample term must be grounded in the sample article");
+const validationArticle = { ...sampleArticle, id: "the-paper:123" };
+const validationAnalysis = { ...sample.articleAnalysis, articleId: validationArticle.id };
+check(language.validateAnalysisOutput(validationAnalysis, validationArticle, 20).terms.length === 20, "Intermediate validator must accept exactly 20 grounded terms");
+check(language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.slice(0, 10) }, validationArticle, 10).terms.length === 10, "Advanced validator must accept exactly 10 grounded terms");
+let mismatchedTermCountRejected = false;
+try {
+  language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.slice(0, 10) }, validationArticle, 20);
+} catch {
+  mismatchedTermCountRejected = true;
+}
+check(mismatchedTermCountRejected, "Intermediate validator must reject a response that does not contain 20 terms");
 
 const secretCandidates = [...availableFiles].filter((path) => /\.(?:js|json|md|html|css)$/.test(path));
 for (const path of secretCandidates) {
@@ -139,6 +164,8 @@ globalThis.localStorage = {
 };
 globalThis.window = { location: { protocol: "http:" }, setTimeout, clearTimeout };
 const { config: checkedConfig } = await import(new URL("../config.js", import.meta.url));
+check(checkedConfig.analysisTermCounts.Intermediate === 20, "Browser config must map Intermediate to 20 terms");
+check(checkedConfig.analysisTermCounts.Advanced === 10, "Browser config must map Advanced to 10 terms");
 const { source: checkedSource } = await import(new URL("../source.js", import.meta.url));
 const firstSave = await checkedSource.save(sample.vocabularyRecord);
 const duplicateSave = await checkedSource.save(sample.vocabularyRecord);

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A focused reader for advanced Mandarin learners.">
+    <meta name="theme-color" content="#102b2b">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102b2b'/%3E%3Cpath d='M18 18h28v7H35v21h-7V25H18z' fill='%23f3e9d2'/%3E%3Ccircle cx='45' cy='43' r='6' fill='%23e05a3f'/%3E%3C/svg%3E">
+    <title>Daily Chinese Read</title>
+    <link rel="stylesheet" href="./style.css">
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#article-list">Skip to articles</a>
+    <header class="site-header">
+      <a class="wordmark" href="./" aria-label="Daily Chinese Read home">
+        <span class="wordmark__mark" aria-hidden="true">读</span>
+        <span>Daily Chinese Read</span>
+      </a>
+      <div class="phase-label">Live sources · Phase 1</div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">Sunday reading · 13 September</p>
+          <h1 id="page-title">Read what matters.<br><span>Keep the Chinese.</span></h1>
+        </div>
+        <p class="intro__copy">A short, considered selection of recent Chinese reporting for readers who want context without leaving the original language behind.</p>
+      </section>
+
+      <section class="controls" aria-label="Reading controls">
+        <button class="primary-button" id="load-reading" type="button">查看今日文章</button>
+        <label class="state-control" id="preview-state-control" for="preview-state" hidden>
+          Preview state
+          <select id="preview-state">
+            <option value="success">Success</option>
+            <option value="partial">One source unavailable</option>
+            <option value="empty">Empty</option>
+            <option value="error">Error</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="reading-list" id="reading-list" aria-labelledby="selection-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Today’s selection</p>
+            <h2 id="selection-title">值得细读</h2>
+          </div>
+          <span id="result-count" aria-live="polite">—</span>
+        </div>
+        <p id="status-message" class="status" role="status" aria-live="polite"></p>
+        <div id="notice" class="notice" role="alert" hidden></div>
+        <div id="article-list" class="article-grid"></div>
+      </section>
+
+      <section class="reader" id="reader" aria-label="Article reader" tabindex="-1" hidden>
+        <div class="reader__toolbar">
+          <button class="text-button" id="reader-back" type="button">← Back to today’s selection</button>
+          <span id="reader-status" role="status" aria-live="polite"></span>
+        </div>
+        <div id="reader-error" class="notice notice--error" role="alert" hidden></div>
+        <article id="reader-content"></article>
+      </section>
+    </main>
+
+    <footer>
+      <p>Original reporting remains with its publisher. Source links accompany every reading.</p>
+      <p>为学习而读</p>
+    </footer>
+  </body>
+</html>

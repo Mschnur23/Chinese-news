@@ -1,0 +1,36 @@
+export const serverConfig = Object.freeze({
+  requestTimeoutMs: 12000,
+  maximumRedirects: 3,
+  maximumResponseBytes: 1800000,
+  maximumArticleCharacters: 30000,
+  minimumArticleCharacters: 180,
+  candidateLimitPerSource: 10,
+  displayedResultLimit: 5,
+  userAgent: "DailyChineseRead/0.1 (+personal-learning-reader)",
+  sources: Object.freeze({
+    "the-paper": Object.freeze({
+      id: "the-paper",
+      name: "澎湃新闻",
+      homepageUrl: "https://www.thepaper.cn/",
+      description: "A Shanghai-based Chinese news publication known for current affairs, public policy, and in-depth reporting.",
+      discoveryUrl: "https://www.thepaper.cn/",
+      hosts: Object.freeze(["www.thepaper.cn", "thepaper.cn"]),
+    }),
+    stcn: Object.freeze({
+      id: "stcn",
+      name: "证券时报",
+      homepageUrl: "https://www.stcn.com/",
+      description: "The official website of Securities Times, focused on China’s capital markets, companies, finance, and economic policy.",
+      discoveryUrl: "https://www.stcn.com/",
+      hosts: Object.freeze(["www.stcn.com", "stcn.com"]),
+    }),
+    jiemian: Object.freeze({
+      id: "jiemian",
+      name: "界面新闻",
+      homepageUrl: "https://www.jiemian.com/",
+      description: "A Shanghai-based business and general news publication covering companies, finance, technology, and public affairs.",
+      discoveryUrl: "https://www.jiemian.com/",
+      hosts: Object.freeze(["www.jiemian.com", "jiemian.com"]),
+    }),
+  }),
+});

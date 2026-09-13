@@ -1,0 +1,118 @@
+{
+  "articleSummaries": [
+    {
+      "id": "the-paper-ai-industry-20260913",
+      "titleZh": "人工智能产业进入应用深化期，企业如何寻找新增长点",
+      "sourceId": "the-paper",
+      "sourceName": "澎湃新闻",
+      "sourceHomepageUrl": "https://www.thepaper.cn/",
+      "sourceDescription": "A Shanghai-based Chinese news publication known for current affairs, public policy, and in-depth reporting.",
+      "canonicalUrl": "https://www.thepaper.cn/",
+      "publishedAt": "2026-09-13T08:20:00+08:00",
+      "topic": "人工智能",
+      "description": "从企业实践出发，观察人工智能由技术竞赛转向行业落地的新阶段。",
+      "whyItMatters": "The shift from model-building to practical adoption may reshape where investment and productivity gains appear.",
+      "whyItFits": "This connects artificial intelligence with Chinese business strategy and technology policy.",
+      "difficulty": "Advanced",
+      "readingMinutes": 9
+    },
+    {
+      "id": "stcn-consumption-20260913",
+      "titleZh": "服务消费释放新动能，城市商业加快调整供给",
+      "sourceId": "stcn",
+      "sourceName": "证券时报",
+      "canonicalUrl": "https://www.stcn.com/",
+      "publishedAt": "2026-09-13T07:45:00+08:00",
+      "topic": "商业与经济",
+      "description": "多地消费结构出现变化，文旅、体育与健康服务成为新的关注点。",
+      "whyItMatters": "Changing household demand offers a useful signal about the composition of China’s economic growth.",
+      "whyItFits": "The story combines macroeconomic change with concrete shifts in urban business.",
+      "difficulty": "Intermediate",
+      "readingMinutes": 7
+    },
+    {
+      "id": "the-paper-startups-20260912",
+      "titleZh": "硬科技创业者走向产业一线：耐心资本与长期研发受关注",
+      "sourceId": "the-paper",
+      "sourceName": "澎湃新闻",
+      "canonicalUrl": "https://www.thepaper.cn/",
+      "publishedAt": "2026-09-12T18:10:00+08:00",
+      "topic": "创业",
+      "description": "创业团队、产业资本与地方政策正在重新理解技术成果转化的周期。",
+      "whyItMatters": "Longer funding horizons could affect which research-intensive companies survive to commercial scale.",
+      "whyItFits": "It sits directly at the intersection of startups, industrial policy, and Chinese technology.",
+      "difficulty": "Advanced",
+      "readingMinutes": 11
+    },
+    {
+      "id": "jiemian-trade-20260912",
+      "titleZh": "外贸企业加快市场多元化，供应链韧性成为关键变量",
+      "sourceId": "jiemian",
+      "sourceName": "界面新闻",
+      "canonicalUrl": "https://www.jiemian.com/",
+      "publishedAt": "2026-09-12T16:30:00+08:00",
+      "topic": "中美关系",
+      "description": "面对外部环境变化，中国制造企业正在调整市场布局与供应链策略。",
+      "whyItMatters": "Company-level adjustments reveal how trade uncertainty is changing real operating decisions.",
+      "whyItFits": "This gives a Chinese-language view of trade, manufacturing, and international economic relations.",
+      "difficulty": "Advanced",
+      "readingMinutes": 8
+    }
+  ],
+  "articleDetails": [
+    {
+      "id": "the-paper-ai-industry-20260913",
+      "titleZh": "人工智能产业进入应用深化期，企业如何寻找新增长点",
+      "sourceId": "the-paper",
+      "sourceName": "澎湃新闻",
+      "canonicalUrl": "https://www.thepaper.cn/",
+      "publishedAt": "2026-09-13T08:20:00+08:00",
+      "author": "示例作者",
+      "bodyText": "人工智能产业正在从技术探索走向规模化应用。越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。\n\n在制造、医疗和金融等行业，应用场景正在逐步清晰。与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。",
+      "paragraphs": [
+        "人工智能产业正在从技术探索走向规模化应用。越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。",
+        "在制造、医疗和金融等行业，应用场景正在逐步清晰。与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。"
+      ]
+    }
+  ],
+  "articleAnalysis": {
+    "articleId": "the-paper-ai-industry-20260913",
+    "gistEn": [
+      "Chinese companies are moving from experimentation with artificial intelligence toward practical deployment.",
+      "The transition depends on whether businesses can improve operations while managing data, talent, and return-on-investment constraints."
+    ],
+    "terms": [
+      { "termZh": "规模化", "pinyin": "guīmóhuà", "meaningEn": "at scale", "exactOccurrence": "规模化", "contextSentenceZh": "人工智能产业正在从技术探索走向规模化应用。" },
+      { "termZh": "应用", "pinyin": "yìngyòng", "meaningEn": "application or deployment", "exactOccurrence": "应用", "contextSentenceZh": "人工智能产业正在从技术探索走向规模化应用。" },
+      { "termZh": "生产流程", "pinyin": "shēngchǎn liúchéng", "meaningEn": "production process", "exactOccurrence": "生产流程", "contextSentenceZh": "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。" },
+      { "termZh": "可持续", "pinyin": "kě chíxù", "meaningEn": "sustainable", "exactOccurrence": "可持续", "contextSentenceZh": "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。" },
+      { "termZh": "商业价值", "pinyin": "shāngyè jiàzhí", "meaningEn": "commercial value", "exactOccurrence": "商业价值", "contextSentenceZh": "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。" },
+      { "termZh": "应用场景", "pinyin": "yìngyòng chǎngjǐng", "meaningEn": "use case", "exactOccurrence": "应用场景", "contextSentenceZh": "在制造、医疗和金融等行业，应用场景正在逐步清晰。" },
+      { "termZh": "逐步", "pinyin": "zhúbù", "meaningEn": "gradually", "exactOccurrence": "逐步", "contextSentenceZh": "在制造、医疗和金融等行业，应用场景正在逐步清晰。" },
+      { "termZh": "与此同时", "pinyin": "yǔcǐ tóngshí", "meaningEn": "at the same time", "exactOccurrence": "与此同时", "contextSentenceZh": "与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。" },
+      { "termZh": "投入回报", "pinyin": "tóurù huíbào", "meaningEn": "return on investment", "exactOccurrence": "投入回报", "contextSentenceZh": "与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。" },
+      { "termZh": "现实问题", "pinyin": "xiànshí wèntí", "meaningEn": "practical challenge", "exactOccurrence": "现实问题", "contextSentenceZh": "与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。" }
+    ]
+  },
+  "sentenceExplanation": {
+    "sentenceZh": "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。",
+    "translationEn": "More and more companies are beginning to focus on whether the technology can genuinely improve production processes and create sustainable commercial value.",
+    "explanationEn": "能否 introduces an indirect yes-or-no question: whether something can happen. 并 links the improvement of operations to the further result of creating value."
+  },
+  "vocabularyRecord": {
+    "id": "规模化:the-paper-ai-industry-20260913:人工智能产业正在从技术探索走向规模化应用。",
+    "termZh": "规模化",
+    "pinyin": "guīmóhuà",
+    "meaningEn": "at scale",
+    "contextSentenceZh": "人工智能产业正在从技术探索走向规模化应用。",
+    "articleId": "the-paper-ai-industry-20260913",
+    "articleTitleZh": "人工智能产业进入应用深化期，企业如何寻找新增长点",
+    "sourceName": "澎湃新闻",
+    "canonicalUrl": "https://www.thepaper.cn/",
+    "publishedAt": "2026-09-13T08:20:00+08:00",
+    "savedAt": "2026-09-13T10:00:00+08:00"
+  },
+  "warnings": [
+    "证券时报 is temporarily unavailable. Showing valid results from the remaining sources."
+  ]
+}

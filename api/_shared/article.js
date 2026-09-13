@@ -12,7 +12,7 @@ export function validateArticle(detail) {
     throw new PublicError("ARTICLE_NOT_READABLE", "This article is not available in a clean readable form.", 422);
   }
 
-  return { ...detail, bodyText, paragraphs };
+  return { ...detail, imageUrl: detail.imageUrl || "", bodyText, paragraphs };
 }
 
 export function requireArticleId(id, sourceId) {
@@ -20,4 +20,3 @@ export function requireArticleId(id, sourceId) {
   if (!match) throw new PublicError("ARTICLE_ID_INVALID", "The selected article ID is invalid.", 400);
   return match[1];
 }
-

@@ -1,5 +1,5 @@
 import { requireArticleId, validateArticle } from "../article.js";
-import { cleanText, extractParagraphs, toIsoDate, truncate } from "../html.js";
+import { cleanText, extractImageUrl, extractMetadataImageUrl, extractParagraphs, normalizeImageUrl, toIsoDate, truncate } from "../html.js";
 import { fetchPublisherHtml, PublicError } from "../http.js";
 import { serverConfig } from "../server-config.js";
 
@@ -33,6 +33,10 @@ export const thePaperAdapter = Object.freeze({
           sourceId: definition.id,
           sourceName: definition.name,
           canonicalUrl: definition.articleUrl(value.contId),
+          imageUrl: normalizeImageUrl(
+            value.pic || value.smallPic || value.image || value.cover || value.nodeInfo?.pic || "",
+            definition.homepageUrl,
+          ),
           publishedAt: toIsoDate(value.pubTime || value.publishTime),
           description: truncate(value.summary || value.desc || value.nodeInfo?.desc || "", 180),
         });
@@ -62,6 +66,7 @@ export const thePaperAdapter = Object.freeze({
       sourceHomepageUrl: definition.homepageUrl,
       sourceDescription: definition.description,
       canonicalUrl: finalUrl.split("?")[0],
+      imageUrl: extractImageUrl(content.content, finalUrl) || extractMetadataImageUrl(html, finalUrl),
       publishedAt: toIsoDate(content.pubTime || content.publishTime),
       author: cleanText(content.author || ""),
       bodyText: "",

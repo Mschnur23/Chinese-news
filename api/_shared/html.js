@@ -46,6 +46,47 @@ export function extractParagraphs(fragment = "") {
   return paragraphs;
 }
 
+export function normalizeImageUrl(value = "", baseUrl = "") {
+  if (typeof value !== "string") return "";
+  const candidate = decodeHtml(value).trim().split(/\s+/)[0];
+  if (!candidate || candidate.startsWith("data:")) return "";
+  try {
+    const url = new URL(candidate, baseUrl);
+    if (url.protocol !== "https:") return "";
+    return url.href;
+  } catch {
+    return "";
+  }
+}
+
+export function extractMetadataImageUrl(fragment = "", baseUrl = "") {
+  const candidates = [
+    fragment.match(/<meta\b[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)?.[1],
+    fragment.match(/<meta\b[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i)?.[1],
+    fragment.match(/<meta\b[^>]*name=["']twitter:image(?::src)?["'][^>]*content=["']([^"']+)["']/i)?.[1],
+  ];
+  for (const candidate of candidates) {
+    const normalized = normalizeImageUrl(candidate, baseUrl);
+    if (normalized) return normalized;
+  }
+  return "";
+}
+
+export function extractImageUrl(fragment = "", baseUrl = "") {
+  const metadataImage = extractMetadataImageUrl(fragment, baseUrl);
+  if (metadataImage) return metadataImage;
+  const candidates = [
+    fragment.match(/<img\b[^>]*data-src=["']([^"']+)["']/i)?.[1],
+    fragment.match(/<img\b[^>]*data-original=["']([^"']+)["']/i)?.[1],
+    fragment.match(/<img\b[^>]*src=["']([^"']+)["']/i)?.[1],
+  ];
+  for (const candidate of candidates) {
+    const normalized = normalizeImageUrl(candidate, baseUrl);
+    if (normalized) return normalized;
+  }
+  return "";
+}
+
 export function between(value, startPattern, endPattern) {
   const start = value.search(startPattern);
   if (start < 0) return "";
@@ -90,4 +131,3 @@ export function truncate(value, maximum = 180) {
   const text = cleanText(value);
   return text.length > maximum ? `${text.slice(0, maximum - 1)}…` : text;
 }
-

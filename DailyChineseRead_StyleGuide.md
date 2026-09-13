@@ -148,10 +148,13 @@ Card styling:
 - Very light shadow only if needed.
 - Comfortable internal spacing.
 - Avoid unnecessary descriptive copy.
+- Use the original publisher's lead image when it is available over HTTPS. Never invent an editorial image or show a broken placeholder.
 
 ## Article Reader Screen
 
 The article reader should be the most polished part of the app.
+
+When the original article exposes a lead image, show that same image between the article header and reading tools. Preserve its natural editorial character, load it lazily, and hide it cleanly if the publisher blocks delivery.
 
 Suggested top structure:
 

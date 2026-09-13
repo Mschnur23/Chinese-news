@@ -135,10 +135,16 @@ requiredIds.forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `in
 
 const sample = JSON.parse(await text("data/sample.json"));
 check(Array.isArray(sample.articleSummaries) && sample.articleSummaries.length >= 3 && sample.articleSummaries.length <= 5, "Sample data must contain 3–5 article summaries");
-const summaryKeys = ["id", "titleZh", "sourceId", "sourceName", "canonicalUrl", "publishedAt", "topic", "description", "whyItMatters", "whyItFits", "difficulty", "readingMinutes"];
+const summaryKeys = ["id", "titleZh", "sourceId", "sourceName", "canonicalUrl", "imageUrl", "publishedAt", "topic", "description", "whyItMatters", "whyItFits", "difficulty", "readingMinutes"];
 for (const [index, item] of (sample.articleSummaries || []).entries()) {
   summaryKeys.forEach((key) => check(Object.hasOwn(item, key), `Sample article summary ${index + 1} omits ${key}`));
 }
+check(sample.articleSummaries.every((item) => !item.imageUrl || item.imageUrl.startsWith("https://")), "Sample article images must use HTTPS or an empty string");
+check(sample.articleDetails.every((item) => Object.hasOwn(item, "imageUrl") && (!item.imageUrl || item.imageUrl.startsWith("https://"))), "Sample article details must include a safe image URL field");
+const htmlHelpers = await import(new URL("../api/_shared/html.js", import.meta.url));
+check(htmlHelpers.extractImageUrl('<img data-src="https://images.example.test/lead.jpg">', "https://example.test/") === "https://images.example.test/lead.jpg", "Lead-image extraction must support publisher lazy-loading attributes");
+check(htmlHelpers.extractImageUrl('<meta property="og:image" content="https://images.example.test/social.jpg">', "https://example.test/") === "https://images.example.test/social.jpg", "Lead-image extraction must support Open Graph metadata");
+check(htmlHelpers.normalizeImageUrl("http://images.example.test/insecure.jpg", "https://example.test/") === "", "Article images must reject non-HTTPS URLs");
 
 const language = await import(new URL("../api/_shared/language.js", import.meta.url));
 check(language.validateKnownTerms(["规模化", "规模化"]).length === 1, "Known terms must be normalized and deduplicated before analysis");

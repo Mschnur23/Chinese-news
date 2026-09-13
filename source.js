@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=learning-loop-1";
+import { config } from "./config.js?v=editorial-images-1";
 
 let sampleCache;
 

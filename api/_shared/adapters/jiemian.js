@@ -1,5 +1,5 @@
 import { requireArticleId, validateArticle } from "../article.js";
-import { between, cleanText, extractParagraphs, firstText, toIsoDate, truncate } from "../html.js";
+import { between, cleanText, extractImageUrl, extractMetadataImageUrl, extractParagraphs, firstText, toIsoDate, truncate } from "../html.js";
 import { fetchPublisherHtml, PublicError } from "../http.js";
 import { serverConfig } from "../server-config.js";
 
@@ -27,6 +27,7 @@ export const jiemianAdapter = Object.freeze({
         sourceId: definition.id,
         sourceName: definition.name,
         canonicalUrl: definition.articleUrl(numericId),
+        imageUrl: extractImageUrl(context, definition.homepageUrl),
         publishedAt: toIsoDate(dateText),
         description: truncate(description, 180),
       });
@@ -57,6 +58,7 @@ export const jiemianAdapter = Object.freeze({
       sourceHomepageUrl: definition.homepageUrl,
       sourceDescription: definition.description,
       canonicalUrl: finalUrl.split("?")[0],
+      imageUrl: extractImageUrl(content, finalUrl) || extractMetadataImageUrl(html, finalUrl),
       publishedAt,
       author,
       bodyText: "",

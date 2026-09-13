@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=learning-loop-1";
+import { config } from "./config.js?v=editorial-images-1";
 
 const elements = {
   body: document.body,
@@ -78,6 +78,18 @@ function createElement(tagName, className, text) {
   return element;
 }
 
+function createArticleImage(imageUrl, titleZh, className) {
+  if (!imageUrl) return null;
+  const image = createElement("img", className);
+  image.src = imageUrl;
+  image.alt = titleZh ? `配图：${titleZh}` : "文章配图";
+  image.loading = "lazy";
+  image.decoding = "async";
+  image.referrerPolicy = "no-referrer";
+  image.addEventListener("error", () => { image.hidden = true; }, { once: true });
+  return image;
+}
+
 function appendTappableText(parent, text, contextSentenceZh) {
   const segments = typeof Intl.Segmenter === "function"
     ? [...new Intl.Segmenter("zh", { granularity: "word" }).segment(text)]
@@ -150,6 +162,7 @@ export function renderList(items) {
 
   items.forEach((item, index) => {
     const article = createElement("article", "article-card");
+    const image = createArticleImage(item.imageUrl, item.titleZh, "article-card__image");
     const topLine = createElement("div", "article-card__topline");
     const source = createElement("span", "source-label", item.sourceName || "Source unavailable");
     const date = createElement("time", "article-time", formatPublicationDate(item.publishedAt));
@@ -182,7 +195,7 @@ export function renderList(items) {
     const order = createElement("span", "article-card__order", String(index + 1).padStart(2, "0"));
     footer.append(difficulty, duration, order);
 
-    article.append(topLine, title, topic, description, reasons, footer);
+    article.append(...[image, topLine, title, topic, description, reasons, footer].filter(Boolean));
     fragment.append(article);
   });
 
@@ -246,6 +259,8 @@ export function renderArticle(article) {
   original.rel = "noopener noreferrer";
   header.append(sourceLine, title, byline, original);
 
+  const image = createArticleImage(article.imageUrl, article.titleZh, "reader__image");
+
   const body = createElement("div", "reader__body");
   article.paragraphs.forEach((text) => {
     const paragraph = createElement("p");
@@ -268,7 +283,7 @@ export function renderArticle(article) {
   publicationLink.rel = "noopener noreferrer";
   publication.append(publicationKicker, publicationName, publicationDescription, publicationLink);
 
-  elements.readerContent.replaceChildren(header, elements.languageTools, body, publication);
+  elements.readerContent.replaceChildren(...[header, image, elements.languageTools, body, publication].filter(Boolean));
   currentReaderBody = body;
   currentArticle = article;
   currentAnalysis = null;

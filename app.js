@@ -1,5 +1,5 @@
-import { config } from "./config.js?v=learning-loop-1";
-import { source } from "./source.js?v=learning-loop-1";
+import { config } from "./config.js?v=editorial-images-1";
+import { source } from "./source.js?v=editorial-images-1";
 import {
   clearResults,
   clearReader,
@@ -63,7 +63,7 @@ import {
   showSentenceHelpError,
   showWordHelpError,
   revealReviewAnswer,
-} from "./ui.js?v=learning-loop-1";
+} from "./ui.js?v=editorial-images-1";
 
 let currentArticle = null;
 let articleRequestVersion = 0;

@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=anchored-word-help-1";
+import { config } from "./config.js?v=anchored-word-help-2";
 
 let sampleCache;
 

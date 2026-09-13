@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=anchored-word-help-1";
+import { config } from "./config.js?v=anchored-word-help-2";
 
 const elements = {
   body: document.body,
@@ -73,6 +73,10 @@ let selectedSentence = "";
 let vocabularyReturnView = "list";
 let activeWordAnchor = null;
 
+// Keep the contextual definition outside the reading-tools layout so it can
+// remain attached to the tapped word regardless of where that word appears.
+document.body.append(elements.wordHelp);
+
 function createElement(tagName, className, text) {
   const element = document.createElement(tagName);
   if (className) element.className = className;
@@ -117,7 +121,7 @@ function positionWordHelp() {
   const anchorRect = activeWordAnchor.getBoundingClientRect();
   const panelRect = elements.wordHelp.getBoundingClientRect();
   const edge = 12;
-  const gap = 12;
+  const gap = 8;
   let placement = "right";
   let left = anchorRect.right + gap;
   let top = anchorRect.top + (anchorRect.height - panelRect.height) / 2;

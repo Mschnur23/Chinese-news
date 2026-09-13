@@ -856,7 +856,7 @@ select { border-color: var(--border); border-radius: 10px; }
 .language-tools__controls { padding: 1.25rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
 .language-tools__controls h2 { max-width: 22ch; font-family: var(--display); font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 600; line-height: 1.2; }
 .analysis-panel { border-top: 0; }
-.analysis-gist { padding: 1.15rem; border: 1px solid var(--accent-border); border-radius: 14px; background: var(--accent-soft); }
+.analysis-gist { margin-top: 2rem; padding: 1.15rem; border: 1px solid var(--accent-border); border-radius: 14px; background: var(--accent-soft); }
 .analysis-gist p:not(.eyebrow) { font-family: var(--display); font-size: 1.05rem; line-height: 1.65; }
 .analysis-terms { border-color: var(--border); }
 .term-list { gap: 0.55rem; border: 0; }

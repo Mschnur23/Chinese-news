@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=editorial-images-1";
+import { config } from "./config.js?v=brief-bottom-1";
 
 const elements = {
   body: document.body,
@@ -23,6 +23,7 @@ const elements = {
   analysisStatus: document.querySelector("#analysis-status"),
   analysisError: document.querySelector("#analysis-error"),
   analysisPanel: document.querySelector("#analysis-panel"),
+  analysisGistPanel: document.querySelector(".analysis-gist"),
   analysisGist: document.querySelector("#analysis-gist"),
   analysisTerms: document.querySelector("#analysis-terms"),
   analysisTermCount: document.querySelector("#analysis-term-count"),
@@ -283,7 +284,14 @@ export function renderArticle(article) {
   publicationLink.rel = "noopener noreferrer";
   publication.append(publicationKicker, publicationName, publicationDescription, publicationLink);
 
-  elements.readerContent.replaceChildren(...[header, image, elements.languageTools, body, publication].filter(Boolean));
+  elements.readerContent.replaceChildren(...[
+    header,
+    image,
+    elements.languageTools,
+    body,
+    publication,
+    elements.analysisGistPanel,
+  ].filter(Boolean));
   currentReaderBody = body;
   currentArticle = article;
   currentAnalysis = null;
@@ -340,6 +348,7 @@ function appendHighlightedParagraph(paragraphElement, text, terms) {
 export function clearAnalysis(article = currentArticle) {
   currentAnalysis = null;
   elements.analysisPanel.hidden = true;
+  elements.analysisGistPanel.hidden = true;
   elements.analysisGist.replaceChildren();
   elements.analysisTerms.replaceChildren();
   elements.analysisStatus.textContent = "";
@@ -416,6 +425,7 @@ export function renderAnalysis(article, analysis) {
   }
 
   elements.analysisPanel.hidden = false;
+  elements.analysisGistPanel.hidden = false;
   elements.vocabularySaveStatus.textContent = "";
   elements.analysisStatus.textContent = "Language guide ready. Highlighted terms now appear in the original article.";
 }

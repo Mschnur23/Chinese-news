@@ -104,6 +104,9 @@ let selectedSentence = "";
 let vocabularyReturnView = "list";
 let activeWordAnchor = null;
 let importMode = "url";
+const chineseWordSegmenter = typeof Intl.Segmenter === "function"
+  ? new Intl.Segmenter("zh", { granularity: "word" })
+  : null;
 
 // Keep the contextual definition outside the reading-tools layout so it can
 // remain attached to the tapped word regardless of where that word appears.
@@ -129,8 +132,8 @@ function createArticleImage(imageUrl, titleZh, className) {
 }
 
 function appendTappableText(parent, text, contextSentenceZh) {
-  const segments = typeof Intl.Segmenter === "function"
-    ? [...new Intl.Segmenter("zh", { granularity: "word" }).segment(text)]
+  const segments = chineseWordSegmenter
+    ? [...chineseWordSegmenter.segment(text)]
     : [...text].map((segment) => ({ segment, isWordLike: /[\p{Script=Han}]/u.test(segment) }));
   segments.forEach(({ segment, isWordLike }) => {
     if (!isWordLike || !/[\p{Script=Han}]/u.test(segment)) {
@@ -511,7 +514,7 @@ export function renderArticle(article) {
   elements.saveArticle.textContent = "Save article";
   elements.articleSaveStatus.textContent = article.canonicalUrl ? "" : "Add an original link to save this article.";
   clearRelatedReading();
-  clearAnalysis(article);
+  clearAnalysis();
   clearSentenceHelp();
   clearWordHelp();
   elements.reader.focus();
@@ -632,7 +635,7 @@ function appendHighlightedParagraph(paragraphElement, text, terms) {
   }
 }
 
-export function clearAnalysis(article = currentArticle) {
+export function clearAnalysis() {
   currentAnalysis = null;
   elements.analysisPanel.hidden = true;
   elements.analysisGistPanel.hidden = true;
@@ -641,15 +644,6 @@ export function clearAnalysis(article = currentArticle) {
   elements.analysisStatus.textContent = "";
   elements.analysisError.hidden = true;
   elements.analysisError.textContent = "";
-
-  if (article && currentReaderBody) {
-    currentReaderBody.replaceChildren();
-    article.paragraphs.forEach((text) => {
-      const paragraph = createElement("p");
-      appendTappableText(paragraph, text, text);
-      currentReaderBody.append(paragraph);
-    });
-  }
 }
 
 export function setAnalysisBusy(isBusy) {

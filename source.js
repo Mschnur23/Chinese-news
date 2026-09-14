@@ -1,6 +1,31 @@
 import { config } from "./config.js?v=phase5-library-1";
 
 let sampleCache;
+const detailCache = new Map();
+const analysisCache = new Map();
+const relatedCache = new Map();
+
+function remember(cache, key, value, maximumEntries = 40) {
+  if (!cache.has(key) && cache.size >= maximumEntries) cache.delete(cache.keys().next().value);
+  cache.set(key, value);
+  return value;
+}
+
+function wait(milliseconds, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new DOMException("Request cancelled", "AbortError"));
+    const finish = () => {
+      signal?.removeEventListener("abort", abort);
+      resolve();
+    };
+    const abort = () => {
+      window.clearTimeout(timeout);
+      reject(new DOMException("Request cancelled", "AbortError"));
+    };
+    const timeout = window.setTimeout(finish, milliseconds);
+    signal?.addEventListener("abort", abort, { once: true });
+  });
+}
 
 async function readSamples() {
   if (sampleCache) return sampleCache;
@@ -182,16 +207,46 @@ function writeSavedArticlesStore(records) {
   }
 }
 
+function restoreStorageValue(key, value) {
+  if (value === null) localStorage.removeItem(key);
+  else localStorage.setItem(key, value);
+}
+
+function writeKnownAndVocabularyStores(words, records) {
+  const previousKnown = localStorage.getItem(config.knownWordsStorageKey);
+  const previousVocabulary = localStorage.getItem(config.storageKey);
+  try {
+    writeKnownWordsStore(words);
+    writeVocabularyStore(records);
+  } catch (error) {
+    try {
+      restoreStorageValue(config.knownWordsStorageKey, previousKnown);
+      restoreStorageValue(config.storageKey, previousVocabulary);
+    } catch {
+      // Preserve the original storage error; recovery is best-effort when the
+      // browser has disabled storage entirely.
+    }
+    throw error;
+  }
+}
+
 async function requestJson(url, options = {}) {
   if (window.location.protocol === "file:") {
     throw new Error("Open this reader through its local or deployed web address to use live articles.");
   }
 
   const controller = new AbortController();
+  let timedOut = false;
   const timeout = window.setTimeout(
-    () => controller.abort(),
+    () => {
+      timedOut = true;
+      controller.abort();
+    },
     options.timeoutMs || config.requestTimeoutMs,
   );
+  const abortFromCaller = () => controller.abort();
+  options.signal?.addEventListener("abort", abortFromCaller, { once: true });
+  if (options.signal?.aborted) controller.abort();
   try {
     const response = await fetch(url, {
       method: options.method || "GET",
@@ -208,10 +263,11 @@ async function requestJson(url, options = {}) {
     }
     return payload;
   } catch (error) {
-    if (error?.name === "AbortError") throw new Error("The request took too long. Please try again.");
+    if (error?.name === "AbortError" && timedOut) throw new Error("The request took too long. Please try again.");
     throw error;
   } finally {
     window.clearTimeout(timeout);
+    options.signal?.removeEventListener("abort", abortFromCaller);
   }
 }
 
@@ -261,23 +317,27 @@ function normalizeSampleImport(input) {
 }
 
 export const source = Object.freeze({
-  async related(article) {
+  async related(article, options = {}) {
+    const cacheKey = `${article.id}:${article.titleZh}:${article.bodyText.length}`;
+    if (relatedCache.has(cacheKey)) return relatedCache.get(cacheKey);
     if (config.mode === "sample") {
-      await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
+      await wait(config.sampleDelayMs, options.signal);
       const samples = await readSamples();
-      return { items: samples.relatedReading || [] };
+      const result = { items: samples.relatedReading || [] };
+      return remember(relatedCache, cacheKey, result);
     }
     const payload = await requestJson(config.apiRoutes.related, {
       method: "POST",
       timeoutMs: config.relatedReadingRequestTimeoutMs,
+      signal: options.signal,
       body: { article },
     });
-    return payload.data;
+    return remember(relatedCache, cacheKey, payload.data);
   },
 
-  async importArticle(input) {
+  async importArticle(input, options = {}) {
     if (config.mode === "sample") {
-      await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
+      await wait(config.sampleDelayMs, options.signal);
       const pastedArticle = normalizeSampleImport(input);
       if (pastedArticle) return pastedArticle;
       const samples = await readSamples();
@@ -287,14 +347,15 @@ export const source = Object.freeze({
     const payload = await requestJson(config.apiRoutes.import, {
       method: "POST",
       timeoutMs: config.importRequestTimeoutMs,
+      signal: options.signal,
       body: input,
     });
     return payload.data;
   },
 
-  async load(params = {}) {
+  async load(params = {}, options = {}) {
     if (config.mode === "sample") {
-      await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
+      await wait(config.sampleDelayMs, options.signal);
       const samples = await readSamples();
       const limit = Math.min(params.limit || config.displayedResultLimit, config.displayedResultLimit);
       const excludedSourceIds = Array.isArray(params.excludedSourceIds) ? params.excludedSourceIds : [];
@@ -303,27 +364,31 @@ export const source = Object.freeze({
     }
 
     const query = new URLSearchParams({ interests: (params.interests || []).join(",") });
-    const payload = await requestJson(`${config.apiRoutes.articles}?${query}`);
+    const payload = await requestJson(`${config.apiRoutes.articles}?${query}`, { signal: options.signal });
     return { items: payload.data.items, warnings: payload.warnings };
   },
 
-  async detail(id) {
+  async detail(id, options = {}) {
+    if (detailCache.has(id)) return detailCache.get(id);
     if (config.mode === "sample") {
       const samples = await readSamples();
       const article = samples.articleDetails.find((item) => item.id === id);
       if (!article) throw new Error("Article not found.");
-      return article;
+      return remember(detailCache, id, article);
     }
-    const payload = await requestJson(`${config.apiRoutes.article}?id=${encodeURIComponent(id)}`);
-    return payload.data;
+    const payload = await requestJson(`${config.apiRoutes.article}?id=${encodeURIComponent(id)}`, { signal: options.signal });
+    return remember(detailCache, id, payload.data);
   },
 
-  async analyze(article, learnerLevel, knownTerms = []) {
+  async analyze(article, learnerLevel, knownTerms = [], options = {}) {
+    const normalizedKnown = knownTerms.map(normalizedIdentityPart).sort();
+    const cacheKey = `${article.id}:${article.bodyText.length}:${learnerLevel}:${normalizedKnown.join(",")}`;
+    if (analysisCache.has(cacheKey)) return analysisCache.get(cacheKey);
     if (config.mode === "sample") {
       const samples = await readSamples();
       const isImported = article.sourceId === "user-import";
       if (!isImported && samples.articleAnalysis?.articleId !== article.id) throw new Error("Sample analysis is unavailable for this article.");
-      await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
+      await wait(config.sampleDelayMs, options.signal);
       const termCount = config.analysisTermCounts[learnerLevel] || config.analysisTermCounts[config.defaultLearnerLevel];
       const known = new Set(knownTerms.map(normalizedIdentityPart));
       const terms = samples.articleAnalysis.terms
@@ -331,45 +396,49 @@ export const source = Object.freeze({
         .filter((term) => !isImported || (article.bodyText.includes(term.termZh) && article.bodyText.includes(term.contextSentenceZh)))
         .slice(0, termCount);
       if (terms.length !== termCount) throw new Error("The sample vocabulary pool is exhausted. Restore a known word or choose Advanced.");
-      return { ...samples.articleAnalysis, articleId: article.id, terms };
+      const result = { ...samples.articleAnalysis, articleId: article.id, terms };
+      return remember(analysisCache, cacheKey, result);
     }
     const payload = await requestJson(config.apiRoutes.analyze, {
       method: "POST",
       timeoutMs: config.analysisRequestTimeoutMs,
+      signal: options.signal,
       body: { article, learnerLevel, interests: config.defaultInterests, knownTerms },
     });
-    return payload.data;
+    return remember(analysisCache, cacheKey, payload.data);
   },
 
-  async explain({ article, sentenceZh, learnerLevel }) {
+  async explain({ article, sentenceZh, learnerLevel, signal }) {
     if (config.mode === "sample") {
       const samples = await readSamples();
       if (!article.bodyText.includes(sentenceZh) || !sentenceZh.includes("越来越多企业")) {
         throw new Error("Select the complete sample sentence beginning with ‘越来越多企业’.");
       }
-      await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
+      await wait(config.sampleDelayMs, signal);
       return { ...samples.sentenceExplanation, sentenceZh };
     }
     const payload = await requestJson(config.apiRoutes.explain, {
       method: "POST",
       timeoutMs: config.analysisRequestTimeoutMs,
+      signal,
       body: { article, sentenceZh, learnerLevel },
     });
     return payload.data;
   },
 
-  async lookupWord({ article, termZh, contextSentenceZh, learnerLevel }) {
+  async lookupWord({ article, termZh, contextSentenceZh, learnerLevel, signal }) {
     if (config.mode === "sample") {
       const samples = await readSamples();
       const match = samples.articleAnalysis.terms.find((term) => term.termZh === termZh)
         || samples.wordHelp?.find((term) => term.termZh === termZh);
       if (!match) throw new Error(`Sample word help is unavailable for ${termZh}. Try a highlighted content word.`);
-      await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
+      await wait(config.sampleDelayMs, signal);
       return { termZh, pinyin: match.pinyin, meaningEn: match.meaningEn, contextSentenceZh };
     }
     const payload = await requestJson(config.apiRoutes.word, {
       method: "POST",
       timeoutMs: config.analysisRequestTimeoutMs,
+      signal,
       body: { article, termZh, contextSentenceZh, learnerLevel },
     });
     return payload.data;
@@ -428,6 +497,30 @@ export const source = Object.freeze({
       .sort((left, right) => new Date(left.reviewDueAt) - new Date(right.reviewDueAt));
   },
 
+  async librarySnapshot(now = new Date().toISOString()) {
+    const snapshot = { records: [], due: [], known: [], articles: [], errors: [] };
+    try {
+      snapshot.records = readVocabularyStore();
+      const timestamp = new Date(validDate(now)).getTime();
+      snapshot.due = snapshot.records
+        .filter((record) => new Date(record.reviewDueAt).getTime() <= timestamp)
+        .sort((left, right) => new Date(left.reviewDueAt) - new Date(right.reviewDueAt));
+    } catch (error) {
+      snapshot.errors.push(error.message);
+    }
+    try {
+      snapshot.known = readKnownWordsStore();
+    } catch (error) {
+      snapshot.errors.push(error.message);
+    }
+    try {
+      snapshot.articles = readSavedArticlesStore();
+    } catch (error) {
+      snapshot.errors.push(error.message);
+    }
+    return snapshot;
+  },
+
   async review(id, rating, now = new Date().toISOString()) {
     if (!["again", "good", "easy"].includes(rating)) throw storageError();
     const reviewedAt = validDate(now);
@@ -464,8 +557,7 @@ export const source = Object.freeze({
     const existing = words.find((word) => word.normalized === candidate.normalized);
     const nextWords = existing ? words : [candidate, ...words];
     const records = readVocabularyStore().filter((record) => normalizedIdentityPart(record.termZh) !== candidate.normalized);
-    writeKnownWordsStore(nextWords);
-    writeVocabularyStore(records);
+    writeKnownAndVocabularyStores(nextWords, records);
     return { added: !existing, word: existing || candidate, words: nextWords, records };
   },
 

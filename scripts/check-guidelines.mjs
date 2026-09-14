@@ -80,7 +80,7 @@ const ui = await text("ui.js");
 });
 
 const source = await text("source.js");
-["related", "importArticle", "load", "detail", "analyze", "explain", "lookupWord", "save", "list", "remove", "saveArticle", "listArticles", "removeArticle", "reviewQueue", "review", "listKnown", "markKnown", "unmarkKnown"].forEach((name) => {
+["related", "importArticle", "load", "detail", "analyze", "explain", "lookupWord", "save", "list", "remove", "saveArticle", "listArticles", "removeArticle", "reviewQueue", "librarySnapshot", "review", "listKnown", "markKnown", "unmarkKnown"].forEach((name) => {
   check(new RegExp(`async\\s+${name}\\s*\\(`).test(source), `source must expose async ${name}()`);
 });
 
@@ -335,12 +335,15 @@ globalThis.location = { search: "" };
 globalThis.localStorage = {
   getItem(key) { return memory.has(key) ? memory.get(key) : null; },
   setItem(key, value) { memory.set(key, String(value)); },
+  removeItem(key) { memory.delete(key); },
 };
 globalThis.window = { location: { protocol: "http:" }, setTimeout, clearTimeout };
 const { config: checkedConfig } = await import(new URL("../config.js", import.meta.url));
 check(checkedConfig.analysisTermCounts.Intermediate === 20, "Browser config must map Intermediate to 20 terms");
 check(checkedConfig.analysisTermCounts.Advanced === 10, "Browser config must map Advanced to 10 terms");
 const { source: checkedSource } = await import(new URL("../source.js", import.meta.url));
+const emptyLibrary = await checkedSource.librarySnapshot();
+check(emptyLibrary.records.length === 0 && emptyLibrary.articles.length === 0 && emptyLibrary.errors.length === 0, "Library snapshots must load all browser collections through one boundary");
 const firstSave = await checkedSource.save(sample.vocabularyRecord);
 const duplicateSave = await checkedSource.save(sample.vocabularyRecord);
 check(firstSave.added && firstSave.records.length === 1, "First vocabulary save must create one complete record");

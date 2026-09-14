@@ -1,6 +1,7 @@
 import { PublicError, sendJson } from "./_shared/http.js";
 import { parseJsonRequest, validateArticleForLanguage } from "./_shared/language.js";
 import { requestRelatedReading } from "./_shared/model.js";
+import { enforcePaidRequestLimit } from "./_shared/rate-limit.js";
 import { relatedReadingSchema, validateRelatedReading } from "./_shared/related.js";
 import { serverConfig } from "./_shared/server-config.js";
 
@@ -15,6 +16,7 @@ export default async function handler(request, response) {
     return sendJson(response, 405, { ok: false, error: { code: "METHOD_NOT_ALLOWED", message: "Use POST for related reading." }, warnings: [] });
   }
   try {
+    enforcePaidRequestLimit(request, "related");
     const body = parseJsonRequest(request);
     const article = validateArticleForLanguage(body.article);
     const excerpt = article.bodyText.slice(0, serverConfig.relatedReadingInputCharacters);

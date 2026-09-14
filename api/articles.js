@@ -33,10 +33,11 @@ export default async function handler(request, response) {
 
     const items = decorateAndRank(candidates, interests, serverConfig.displayedResultLimit);
     if (!items.length) throw new PublicError("NO_ARTICLES", "No readable recent articles are available right now.", 503);
-    return sendJson(response, 200, { ok: true, data: { items }, warnings });
+    return sendJson(response, 200, { ok: true, data: { items }, warnings }, {
+      cacheControl: "public, s-maxage=300, stale-while-revalidate=900",
+    });
   } catch (error) {
     const publicError = error instanceof PublicError ? error : new PublicError("DISCOVERY_FAILED", "Today’s articles could not be prepared.", 500);
     return sendJson(response, publicError.status, { ok: false, error: { code: publicError.code, message: publicError.message }, warnings });
   }
 }
-

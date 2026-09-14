@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/check-guidelines.mjs"
+    "check": "node scripts/check-guidelines.mjs && node --test tests/*.test.mjs",
+    "test": "node --test tests/*.test.mjs"
   }
 }

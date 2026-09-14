@@ -8,10 +8,10 @@ export class PublicError extends Error {
   }
 }
 
-export function sendJson(response, status, payload) {
+export function sendJson(response, status, payload, options = {}) {
   response.status(status);
   response.setHeader("Content-Type", "application/json; charset=utf-8");
-  response.setHeader("Cache-Control", "no-store");
+  response.setHeader("Cache-Control", options.cacheControl || "no-store");
   response.json(payload);
 }
 
@@ -106,4 +106,3 @@ export async function fetchPublisherHtml(value, allowedHosts) {
 
   throw new PublicError("SOURCE_UNAVAILABLE", "The publisher is temporarily unavailable.", 502);
 }
-

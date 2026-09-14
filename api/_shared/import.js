@@ -212,8 +212,10 @@ export function extractEditorialParagraphs(value, { markdown = false, titleZh = 
     }
   }
 
-  const cleanedTextLength = cleaned.join("\n\n").length;
-  return cleanedTextLength >= serverConfig.minimumExtractedArticleCharacters ? cleaned : paragraphs;
+  // Never fall back to the unfiltered page. A short clean extraction should be
+  // rejected by the caller's validation rather than turning navigation and
+  // recommendation modules back into article paragraphs.
+  return cleaned;
 }
 
 function validateArticleText(paragraphs, minimums = {}) {

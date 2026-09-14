@@ -21,10 +21,11 @@ export default async function handler(request, response) {
     const adapter = adapters[sourceId];
     if (!adapter) throw new PublicError("ARTICLE_ID_INVALID", "The selected article ID is invalid.", 400);
     const article = await adapter.detail(id);
-    return sendJson(response, 200, { ok: true, data: article, warnings: [] });
+    return sendJson(response, 200, { ok: true, data: article, warnings: [] }, {
+      cacheControl: "public, s-maxage=1800, stale-while-revalidate=86400",
+    });
   } catch (error) {
     const publicError = error instanceof PublicError ? error : new PublicError("ARTICLE_FAILED", "The selected article could not be prepared.", 500);
     return sendJson(response, publicError.status, { ok: false, error: { code: publicError.code, message: publicError.message }, warnings: [] });
   }
 }
-

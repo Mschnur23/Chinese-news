@@ -99,6 +99,22 @@ let reviewRecords = [];
 let reviewTotal = 0;
 let pendingImportedArticle = null;
 let pendingImportLearnerLevel = config.defaultLearnerLevel;
+let loadRequestVersion = 0;
+const requestControllers = new Map();
+
+function beginRequest(name) {
+  requestControllers.get(name)?.abort();
+  const controller = new AbortController();
+  requestControllers.set(name, controller);
+  return controller;
+}
+
+function cancelRequests(...names) {
+  names.forEach((name) => {
+    requestControllers.get(name)?.abort();
+    requestControllers.delete(name);
+  });
+}
 
 const previewMessages = Object.freeze({
   empty: "No suitable public articles were found. Try again later.",
@@ -111,6 +127,8 @@ function readableError(error, fallback) {
 }
 
 async function loadReading() {
+  const requestVersion = ++loadRequestVersion;
+  const controller = beginRequest("list");
   const previewState = config.mode === "sample" ? getPreviewState() : "success";
   setBusy(true);
   setStatus("Preparing a small set of native Chinese articles…");
@@ -123,7 +141,8 @@ async function loadReading() {
       limit: config.displayedResultLimit,
       interests: config.defaultInterests,
       excludedSourceIds: previewState === "partial" ? [config.activeSourceIds[1]] : [],
-    });
+    }, { signal: controller.signal });
+    if (requestVersion !== loadRequestVersion) return;
 
     if (previewState === "empty") {
       showEmpty(previewMessages.empty);
@@ -135,10 +154,11 @@ async function loadReading() {
     showNotice(previewState === "partial" ? result.warnings[0] : "");
     setStatus(`Ready: ${result.items.length} recent articles selected for you.`);
   } catch (error) {
+    if (requestVersion !== loadRequestVersion) return;
     showError(readableError(error, previewMessages.error));
     setStatus("Today’s reading could not be loaded.");
   } finally {
-    setBusy(false);
+    if (requestVersion === loadRequestVersion) setBusy(false);
   }
 }
 
@@ -150,23 +170,28 @@ function openImport() {
 }
 
 function cancelImport() {
+  cancelRequests("import");
+  setImportBusy(false);
   pendingImportedArticle = null;
   hideImportView();
 }
 
 async function importArticle(input) {
+  const controller = beginRequest("import");
   pendingImportedArticle = null;
   showImportError("");
   setImportBusy(true);
   try {
-    const article = await source.importArticle(input);
+    const article = await source.importArticle(input, { signal: controller.signal });
+    if (controller.signal.aborted) return;
     pendingImportedArticle = article;
     pendingImportLearnerLevel = input.learnerLevel || config.defaultLearnerLevel;
     renderImportPreview(article);
   } catch (error) {
+    if (controller.signal.aborted) return;
     showImportError(readableError(error, "This article could not be imported. Try pasting its text instead."));
   } finally {
-    setImportBusy(false);
+    if (!controller.signal.aborted) setImportBusy(false);
   }
 }
 
@@ -176,6 +201,8 @@ function openImportedArticle() {
   analysisRequestVersion += 1;
   sentenceRequestVersion += 1;
   wordRequestVersion += 1;
+  relatedRequestVersion += 1;
+  cancelRequests("article", "analysis", "related", "sentence", "word", "import");
   currentArticle = pendingImportedArticle;
   hideImportView(false);
   setLearnerLevel(pendingImportLearnerLevel);
@@ -188,22 +215,27 @@ function openImportedArticle() {
 }
 
 async function openArticle(id) {
+  cancelRequests("analysis", "related", "sentence", "word");
+  const controller = beginRequest("article");
   const requestVersion = ++articleRequestVersion;
   analysisRequestVersion += 1;
   sentenceRequestVersion += 1;
+  wordRequestVersion += 1;
+  relatedRequestVersion += 1;
   currentArticle = null;
   setArticleBusy(true);
   showArticleError("");
   try {
-    const article = await source.detail(id);
+    const article = await source.detail(id, { signal: controller.signal });
     if (requestVersion !== articleRequestVersion) return;
     currentArticle = article;
     renderArticle(article);
     source.listArticles().then(markArticleSaved).catch(() => {});
   } catch (error) {
+    if (requestVersion !== articleRequestVersion) return;
     showArticleError(readableError(error, "This article could not be prepared. Choose another article or try again."));
   } finally {
-    setArticleBusy(false);
+    if (requestVersion === articleRequestVersion) setArticleBusy(false);
   }
 
   if (currentArticle && config.featureFlags.languageScaffolding) {
@@ -216,9 +248,10 @@ async function prepareRelatedReading() {
   if (!currentArticle) return;
   const article = currentArticle;
   const requestVersion = ++relatedRequestVersion;
+  const controller = beginRequest("related");
   setRelatedReadingBusy(true);
   try {
-    const result = await source.related(article);
+    const result = await source.related(article, { signal: controller.signal });
     if (requestVersion !== relatedRequestVersion || article !== currentArticle) return;
     renderRelatedReading(result.items);
   } catch (error) {
@@ -245,7 +278,8 @@ async function prepareAnalysis() {
   if (!currentArticle) return;
   const article = currentArticle;
   const requestVersion = ++analysisRequestVersion;
-  clearAnalysis(article);
+  const controller = beginRequest("analysis");
+  clearAnalysis();
   showAnalysisError("");
   setAnalysisBusy(true);
   try {
@@ -255,7 +289,12 @@ async function prepareAnalysis() {
     } catch {
       knownWords = [];
     }
-    const analysis = await source.analyze(article, getLearnerLevel(), knownWords.map((word) => word.termZh));
+    const analysis = await source.analyze(
+      article,
+      getLearnerLevel(),
+      knownWords.map((word) => word.termZh),
+      { signal: controller.signal },
+    );
     if (requestVersion !== analysisRequestVersion || article !== currentArticle) return;
     renderAnalysis(article, analysis);
     try {
@@ -322,7 +361,7 @@ async function openVocabulary() {
   showVocabularyError("");
   setVocabularyBusy(true);
   try {
-    const [records, due, known, articles] = await Promise.all([source.list(), source.reviewQueue(), source.listKnown(), source.listArticles()]);
+    const { records, due, known, articles, errors } = await source.librarySnapshot();
     setVocabularyCount(records.length);
     reviewRecords = due;
     reviewTotal = due.length;
@@ -333,6 +372,7 @@ async function openVocabulary() {
     else showSavedArticlesEmpty("No saved articles yet. Save an original link while reading.");
     if (records.length) renderVocabulary(records);
     else showVocabularyEmpty("No saved terms yet. Open an article and save a term from its language guide.");
+    if (errors.length) showVocabularyError([...new Set(errors)].join(" "));
   } catch (error) {
     showVocabularyError(readableError(error, "Saved vocabulary could not be loaded. Your existing browser data was left unchanged."));
   } finally {
@@ -400,9 +440,16 @@ async function lookupWord({ termZh, contextSentenceZh, anchor }) {
   if (!currentArticle) return;
   const article = currentArticle;
   const requestVersion = ++wordRequestVersion;
+  const controller = beginRequest("word");
   setWordHelpBusy(termZh, true, anchor);
   try {
-    const word = await source.lookupWord({ article, termZh, contextSentenceZh, learnerLevel: getLearnerLevel() });
+    const word = await source.lookupWord({
+      article,
+      termZh,
+      contextSentenceZh,
+      learnerLevel: getLearnerLevel(),
+      signal: controller.signal,
+    });
     if (requestVersion !== wordRequestVersion || article !== currentArticle) return;
     renderWordHelp(word);
   } catch (error) {
@@ -448,12 +495,14 @@ async function explainSentence(sentenceZh) {
 
   const article = currentArticle;
   const requestVersion = ++sentenceRequestVersion;
+  const controller = beginRequest("sentence");
   setSentenceHelpBusy(true);
   try {
     const explanation = await source.explain({
       article,
       sentenceZh,
       learnerLevel: getLearnerLevel(),
+      signal: controller.signal,
     });
     if (requestVersion !== sentenceRequestVersion || article !== currentArticle) return;
     renderSentenceHelp(explanation);
@@ -471,6 +520,7 @@ function closeReader() {
   sentenceRequestVersion += 1;
   wordRequestVersion += 1;
   relatedRequestVersion += 1;
+  cancelRequests("article", "analysis", "related", "sentence", "word");
   currentArticle = null;
   clearReader();
   setAnalysisBusy(false);
@@ -479,6 +529,8 @@ function closeReader() {
 
 function goHome() {
   closeReader();
+  cancelRequests("import");
+  setImportBusy(false);
   hideImportView();
   hideVocabularyView();
 }

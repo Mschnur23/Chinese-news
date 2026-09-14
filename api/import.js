@@ -2,6 +2,7 @@ import { importWithFirecrawl } from "./_shared/import-adapters/firecrawl.js";
 import { normalizePastedArticle, parseImportRequest, validateImportUrl } from "./_shared/import.js";
 import { validateLearnerLevel } from "./_shared/language.js";
 import { PublicError, sendJson } from "./_shared/http.js";
+import { enforcePaidRequestLimit } from "./_shared/rate-limit.js";
 
 export default async function handler(request, response) {
   if (request.method !== "POST") {
@@ -10,6 +11,7 @@ export default async function handler(request, response) {
   }
 
   try {
+    enforcePaidRequestLimit(request, "import");
     const input = parseImportRequest(request);
     validateLearnerLevel(input.learnerLevel);
     const article = input.mode === "text"

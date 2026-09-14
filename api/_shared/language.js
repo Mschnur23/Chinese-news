@@ -3,7 +3,8 @@ import { serverConfig } from "./server-config.js";
 
 const allowedLearnerLevels = new Set(["Intermediate", "Advanced"]);
 const termCountsByLearnerLevel = Object.freeze({ Intermediate: 20, Advanced: 10 });
-const articleIdPattern = /^(the-paper|stcn|jiemian):\d+$/;
+const articleIdPattern = /^(?:(?:the-paper|stcn|jiemian):\d+|user-import:[a-f0-9]{16})$/;
+const importedArticleIdPattern = /^user-import:[a-f0-9]{16}$/;
 
 function requireString(value, field, maximumLength) {
   if (typeof value !== "string") {
@@ -93,18 +94,24 @@ export function validateArticleForLanguage(value) {
     throw new PublicError("ARTICLE_INVALID", "The article ID is invalid.", 400);
   }
   const sourceId = requireString(value.sourceId, "Source ID", 30);
-  if (id.split(":")[0] !== sourceId || !serverConfig.sources[sourceId]) {
-    throw new PublicError("ARTICLE_INVALID", "The article source is invalid.", 400);
+  const isImported = sourceId === "user-import";
+  let canonicalUrl = "";
+  if (value.canonicalUrl) {
+    try {
+      canonicalUrl = new URL(value.canonicalUrl);
+    } catch {
+      throw new PublicError("ARTICLE_INVALID", "The canonical article link is invalid.", 400);
+    }
   }
-
-  let canonicalUrl;
-  try {
-    canonicalUrl = new URL(value.canonicalUrl);
-  } catch {
-    throw new PublicError("ARTICLE_INVALID", "The canonical article link is invalid.", 400);
-  }
-  if (canonicalUrl.protocol !== "https:" || !serverConfig.sources[sourceId].hosts.includes(canonicalUrl.hostname)) {
+  if (
+    (canonicalUrl && canonicalUrl.protocol !== "https:")
+    || (!isImported && (!canonicalUrl || !serverConfig.sources[sourceId]?.hosts.includes(canonicalUrl.hostname)))
+    || (isImported && !importedArticleIdPattern.test(id))
+  ) {
     throw new PublicError("ARTICLE_INVALID", "The article source is not allowed.", 400);
+  }
+  if (!isImported && (id.split(":")[0] !== sourceId || !serverConfig.sources[sourceId])) {
+    throw new PublicError("ARTICLE_INVALID", "The article source is invalid.", 400);
   }
 
   const paragraphs = Array.isArray(value.paragraphs)
@@ -123,8 +130,8 @@ export function validateArticleForLanguage(value) {
     id,
     titleZh: requireString(value.titleZh, "Article title", 500),
     sourceId,
-    sourceName: requireString(value.sourceName, "Source name", 80),
-    canonicalUrl: canonicalUrl.toString(),
+    sourceName: requireString(value.sourceName, "Source name", serverConfig.maximumImportSourceCharacters),
+    canonicalUrl: canonicalUrl ? canonicalUrl.toString() : "",
     bodyText,
   };
 }

@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation specification only. No product functionality is changed by this file.
+Implemented locally. Pasted-text and Firecrawl-backed URL imports now normalize into the existing reading and learning workflow.
 
 ## Goal
 
@@ -71,7 +71,7 @@ Every successful import returns the existing API envelope and a complete object 
 
 ```js
 {
-  id: "import:<stable content hash>",
+  id: "user-import:<16-character stable content hash>",
   originType: "url | text",
   titleZh: "string",
   sourceId: "user-import",

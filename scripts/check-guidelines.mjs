@@ -37,11 +37,16 @@ const requiredFiles = [
   "ui.js",
   "source.js",
   "api/word.js",
+  "api/import.js",
+  "api/_shared/import.js",
+  "api/_shared/import-adapters/firecrawl.js",
   "config.js",
   "data/sample.json",
   "CONTRACTS.md",
   "CHECKS.md",
   "README.md",
+  "Phase4_CustomArticleImport.md",
+  ".env.example",
   ".gitignore",
 ];
 
@@ -72,7 +77,7 @@ const ui = await text("ui.js");
 });
 
 const source = await text("source.js");
-["load", "detail", "analyze", "explain", "lookupWord", "save", "list", "remove", "reviewQueue", "review", "listKnown", "markKnown", "unmarkKnown"].forEach((name) => {
+["importArticle", "load", "detail", "analyze", "explain", "lookupWord", "save", "list", "remove", "reviewQueue", "review", "listKnown", "markKnown", "unmarkKnown"].forEach((name) => {
   check(new RegExp(`async\\s+${name}\\s*\\(`).test(source), `source must expose async ${name}()`);
 });
 
@@ -132,6 +137,28 @@ requiredIds.forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `in
   "known-words",
   "known-words-list",
 ].forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `index.html is missing Phase 3 DOM id: ${id}`));
+[
+  "open-import",
+  "import-view",
+  "import-back",
+  "import-tab-url",
+  "import-tab-text",
+  "import-form",
+  "import-url-panel",
+  "import-url",
+  "import-text-panel",
+  "import-title-input",
+  "import-source-input",
+  "import-original-url",
+  "import-text",
+  "import-level",
+  "import-submit",
+  "import-status",
+  "import-error",
+  "import-preview",
+  "import-preview-content",
+  "open-imported-article",
+].forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `index.html is missing Phase 4 DOM id: ${id}`));
 
 const sample = JSON.parse(await text("data/sample.json"));
 check(Array.isArray(sample.articleSummaries) && sample.articleSummaries.length >= 3 && sample.articleSummaries.length <= 5, "Sample data must contain 3–5 article summaries");
@@ -206,9 +233,49 @@ const wordSelection = language.validateWordSelection("企业", sampleArticle.par
 const wordHelp = language.validateWordHelpOutput({ termZh: "企业", pinyin: "qǐyè", meaningEn: "company", contextSentenceZh: sampleArticle.paragraphs[1] }, wordSelection);
 check(wordHelp.termZh === "企业" && wordHelp.pinyin === "qǐyè", "Grounded contextual word help must pass validation");
 
+const importHelpers = await import(new URL("../api/_shared/import.js", import.meta.url));
+const importedFromText = importHelpers.normalizePastedArticle({
+  titleZh: "人工智能产业观察",
+  sourceName: "测试来源",
+  canonicalUrl: "",
+  text: sample.importedArticle.bodyText,
+});
+check(/^user-import:[a-f0-9]{16}$/.test(importedFromText.id), "Pasted articles must receive a stable user-import content ID");
+check(importedFromText.originType === "text" && importedFromText.canonicalUrl === "", "Pasted articles must support missing optional source links");
+check(importedFromText.paragraphs.join("\n\n") === importedFromText.bodyText, "Pasted article paragraph boundaries must match body text");
+check(language.validateArticleForLanguage(importedFromText).id === importedFromText.id, "Imported pasted text must pass the existing language-analysis boundary");
+let mismatchedImportedIdRejected = false;
+try {
+  language.validateArticleForLanguage({ ...importedFromText, id: "the-paper:123" });
+} catch {
+  mismatchedImportedIdRejected = true;
+}
+check(mismatchedImportedIdRejected, "An imported article must not accept a curated-source ID");
+const importedFromUrl = importHelpers.normalizeExtractedArticle("https://example.test/article", {
+  markdown: `# 人工智能产业观察\n\n${sample.importedArticle.paragraphs.join("\n\n")}`,
+  metadata: { title: "人工智能产业观察", siteName: "测试来源", sourceURL: "https://example.test/article" },
+});
+check(importedFromUrl.originType === "url" && importedFromUrl.canonicalUrl === "https://example.test/article", "Extracted links must normalize into an imported URL article");
+const unsafeImportUrls = ["http://example.test/article", "https://127.0.0.1/article", "https://localhost/article", "https://bit.ly/example", "https://user:password@example.test/article"];
+for (const unsafeUrl of unsafeImportUrls) {
+  let rejected = false;
+  try {
+    importHelpers.validateImportUrl(unsafeUrl);
+  } catch {
+    rejected = true;
+  }
+  check(rejected, `Unsafe import URL must be rejected: ${unsafeUrl}`);
+}
+const firecrawlAdapter = await text("api/_shared/import-adapters/firecrawl.js");
+check(firecrawlAdapter.includes("process.env.FIRECRAWL_API_KEY"), "Firecrawl credentials must be read only from the server environment");
+check(!firecrawlAdapter.includes("console."), "The Firecrawl adapter must not log imported content or provider responses");
+const environmentExample = await text(".env.example");
+check(environmentExample.split(/\r?\n/).includes("FIRECRAWL_API_KEY="), ".env.example must document the Firecrawl key without a value");
+
 const secretCandidates = [...availableFiles].filter((path) => /\.(?:js|json|md|html|css)$/.test(path));
 for (const path of secretCandidates) {
   check(!/\bsk-(?:proj-)?[A-Za-z0-9_-]{20,}\b/.test(await text(path)), `${path} appears to contain a hard-coded OpenAI API key`);
+  check(!/\bfc-[A-Za-z0-9_-]{20,}\b/.test(await text(path)), `${path} appears to contain a hard-coded Firecrawl API key`);
 }
 
 const memory = new Map();
@@ -240,11 +307,22 @@ const secondRecord = {
   contextSentenceZh: "人工智能产业正在从技术探索走向规模化应用。",
 };
 const secondSave = await checkedSource.save(secondRecord);
+const importedVocabulary = await checkedSource.save({
+  ...sample.vocabularyRecord,
+  id: "",
+  termZh: "产业",
+  articleId: importedFromText.id,
+  articleTitleZh: importedFromText.titleZh,
+  sourceName: importedFromText.sourceName,
+  canonicalUrl: "",
+  publishedAt: null,
+});
+check(importedVocabulary.record.canonicalUrl === "", "Imported vocabulary must support an absent original link");
 const removal = await checkedSource.remove(firstSave.record.id);
 check(secondSave.records.length === 2, "A distinct vocabulary record must save alongside the first");
-check(removal.removed && removal.records.length === 1 && removal.records[0].termZh === "应用", "Removing one vocabulary record must preserve the others");
+check(removal.removed && removal.records.length === 2, "Removing one vocabulary record must preserve the others");
 const knownResult = await checkedSource.markKnown("应用");
-check(knownResult.words.length === 1 && knownResult.records.length === 0, "Marking a word known must exclude it and remove its saved review records");
+check(knownResult.words.length === 1 && knownResult.records.length === 1 && knownResult.records[0].termZh === "产业", "Marking a word known must exclude it and remove only its saved review records");
 check((await checkedSource.listKnown())[0].termZh === "应用", "Known words must persist in their versioned browser store");
 const restoredKnown = await checkedSource.unmarkKnown("应用");
 check(restoredKnown.removed && restoredKnown.words.length === 0, "A known word must be restorable to future language guides");

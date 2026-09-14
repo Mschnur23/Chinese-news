@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=word-only-highlights-1";
+import { config } from "./config.js?v=phase4-import-1";
 
 let sampleCache;
 
@@ -17,6 +17,17 @@ function storageError() {
 function requiredText(value) {
   if (typeof value !== "string" || !value.trim()) throw storageError();
   return value.trim();
+}
+
+function optionalHttpsUrl(value) {
+  if (value === undefined || value === null || value === "") return "";
+  const text = requiredText(value);
+  try {
+    if (new URL(text).protocol !== "https:") throw storageError();
+  } catch {
+    throw storageError();
+  }
+  return text;
 }
 
 function normalizedIdentityPart(value) {
@@ -52,7 +63,7 @@ function normalizeVocabularyRecord(value, options = {}) {
     articleId: requiredText(value.articleId),
     articleTitleZh: requiredText(value.articleTitleZh),
     sourceName: requiredText(value.sourceName),
-    canonicalUrl: requiredText(value.canonicalUrl),
+    canonicalUrl: optionalHttpsUrl(value.canonicalUrl),
     publishedAt: validDate(value.publishedAt, true),
     savedAt,
     reviewStage: options.forSave ? 0 : nonNegativeInteger(value.reviewStage),
@@ -61,11 +72,6 @@ function normalizeVocabularyRecord(value, options = {}) {
     reviewCount: options.forSave ? 0 : nonNegativeInteger(value.reviewCount),
     lapseCount: options.forSave ? 0 : nonNegativeInteger(value.lapseCount),
   };
-  try {
-    if (new URL(record.canonicalUrl).protocol !== "https:") throw storageError();
-  } catch {
-    throw storageError();
-  }
   record.id = vocabularyId(record);
   if (!options.forSave && value.id !== record.id) throw storageError();
   return record;
@@ -161,7 +167,69 @@ async function requestJson(url, options = {}) {
   }
 }
 
+function normalizeSampleImport(input) {
+  if (!input || !["url", "text"].includes(input.mode)) throw new Error("Choose a link or pasted text.");
+  if (input.mode === "url") {
+    try {
+      const url = new URL(input.url);
+      if (url.protocol !== "https:" || url.username || url.password) throw new Error();
+    } catch {
+      throw new Error("Enter a complete HTTPS article link.");
+    }
+    return null;
+  }
+  const titleZh = typeof input.titleZh === "string" ? input.titleZh.trim() : "";
+  const text = typeof input.text === "string" ? input.text.normalize("NFKC").trim() : "";
+  if (!titleZh) throw new Error("Add the article title.");
+  if (text.length < config.minimumImportCharacters) throw new Error("Add more of the Chinese article before importing it.");
+  if (text.length > config.maximumImportCharacters) throw new Error("Shorten the article to 30,000 characters or fewer.");
+  if ((text.match(/\p{Script=Han}/gu) || []).length < 100) throw new Error("The import needs more Chinese article text.");
+  const paragraphs = text.split(/\n\s*\n+|\n+/).map((item) => item.replace(/\s+/g, " ").trim()).filter(Boolean);
+  let canonicalUrl = "";
+  if (input.canonicalUrl?.trim()) {
+    try {
+      const parsedUrl = new URL(input.canonicalUrl.trim());
+      if (parsedUrl.protocol !== "https:") throw new Error();
+      canonicalUrl = parsedUrl.toString();
+    } catch {
+      throw new Error("Use a complete HTTPS original link, or leave it blank.");
+    }
+  }
+  return {
+    id: "user-import:0000000000000001",
+    originType: "text",
+    titleZh,
+    sourceId: "user-import",
+    sourceName: input.sourceName?.trim() || (canonicalUrl ? new URL(canonicalUrl).hostname.replace(/^www\./, "") : "Pasted article"),
+    sourceHomepageUrl: canonicalUrl ? `${new URL(canonicalUrl).origin}/` : "",
+    sourceDescription: "",
+    canonicalUrl,
+    imageUrl: "",
+    publishedAt: null,
+    author: "",
+    bodyText: paragraphs.join("\n\n"),
+    paragraphs,
+  };
+}
+
 export const source = Object.freeze({
+  async importArticle(input) {
+    if (config.mode === "sample") {
+      await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
+      const pastedArticle = normalizeSampleImport(input);
+      if (pastedArticle) return pastedArticle;
+      const samples = await readSamples();
+      if (!samples.importedArticle) throw new Error("Sample import is unavailable.");
+      return samples.importedArticle;
+    }
+    const payload = await requestJson(config.apiRoutes.import, {
+      method: "POST",
+      timeoutMs: config.importRequestTimeoutMs,
+      body: input,
+    });
+    return payload.data;
+  },
+
   async load(params = {}) {
     if (config.mode === "sample") {
       await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
@@ -191,13 +259,17 @@ export const source = Object.freeze({
   async analyze(article, learnerLevel, knownTerms = []) {
     if (config.mode === "sample") {
       const samples = await readSamples();
-      if (samples.articleAnalysis?.articleId !== article.id) throw new Error("Sample analysis is unavailable for this article.");
+      const isImported = article.sourceId === "user-import";
+      if (!isImported && samples.articleAnalysis?.articleId !== article.id) throw new Error("Sample analysis is unavailable for this article.");
       await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
       const termCount = config.analysisTermCounts[learnerLevel] || config.analysisTermCounts[config.defaultLearnerLevel];
       const known = new Set(knownTerms.map(normalizedIdentityPart));
-      const terms = samples.articleAnalysis.terms.filter((term) => !known.has(normalizedIdentityPart(term.termZh))).slice(0, termCount);
+      const terms = samples.articleAnalysis.terms
+        .filter((term) => !known.has(normalizedIdentityPart(term.termZh)))
+        .filter((term) => !isImported || (article.bodyText.includes(term.termZh) && article.bodyText.includes(term.contextSentenceZh)))
+        .slice(0, termCount);
       if (terms.length !== termCount) throw new Error("The sample vocabulary pool is exhausted. Restore a known word or choose Advanced.");
-      return { ...samples.articleAnalysis, terms };
+      return { ...samples.articleAnalysis, articleId: article.id, terms };
     }
     const payload = await requestJson(config.apiRoutes.analyze, {
       method: "POST",

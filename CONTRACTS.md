@@ -32,9 +32,9 @@ This file records the interfaces that later phases must preserve. All documented
   titleZh: "string",
   sourceId: "string",
   sourceName: "string",
-  sourceHomepageUrl: "https URL",
+  sourceHomepageUrl: "https URL | empty string for imported text",
   sourceDescription: "string",
-  canonicalUrl: "string",
+  canonicalUrl: "https URL | empty string for imported text",
   imageUrl: "https URL | empty string",
   publishedAt: "ISO-8601 string | null",
   author: "string",
@@ -42,6 +42,20 @@ This file records the interfaces that later phases must preserve. All documented
   paragraphs: ["string"]
 }
 ```
+
+### Imported article
+
+An imported article is an `ArticleDetail` with these additional invariants:
+
+```js
+{
+  id: "user-import:<16 lowercase hexadecimal characters>",
+  originType: "url | text",
+  sourceId: "user-import"
+}
+```
+
+Its title, canonical URL, and normalized body determine its stable server-issued ID. Imported bodies remain in current page memory only. Missing optional author, image, source description, homepage, original link, or date values render nothing rather than fabricated placeholder copy.
 
 ### Article analysis
 
@@ -85,7 +99,7 @@ The model selects only level-appropriate difficult or useful candidates, then or
   articleId: "string",
   articleTitleZh: "string",
   sourceName: "string",
-  canonicalUrl: "string",
+  canonicalUrl: "https URL | empty string",
   publishedAt: "ISO-8601 string | null",
   savedAt: "ISO-8601 string",
   reviewStage: "non-negative integer",
@@ -136,6 +150,7 @@ Keys are always present. Public errors contain no stack traces, provider output,
 | `/api/analyze` | `POST` | Phase 2 | Validate an article and return grounded language analysis. |
 | `/api/explain` | `POST` | Phase 2 | Explain a bounded sentence verified against an article. |
 | `/api/word` | `POST` | Learning loop | Explain one tapped article word in its verified sentence context. |
+| `/api/import` | `POST` | Phase 4 | Validate pasted text or extract one public HTTPS article and return an imported article. |
 
 ## DO NOT CHANGE WITHOUT ASKING
 
@@ -171,6 +186,7 @@ The normal site URL uses live data. Adding `?preview=1` switches that browser se
 - `source.listKnown()` → `KnownWord[]`.
 - `source.markKnown(termZh)` and `source.unmarkKnown(termZh)` update the known-word store.
 - `source.lookupWord({ article, termZh, contextSentenceZh, learnerLevel })` → `ContextualWordHelp`.
+- `source.importArticle(input)` → one normalized imported `ArticleDetail`; pasted text and link extraction both enter through this method.
 
 All browser network and persistence operations enter through `source.js`.
 
@@ -193,6 +209,7 @@ Allowed values are `Intermediate` and `Advanced`.
 - `the-paper` → 澎湃新闻.
 - `stcn` → 证券时报.
 - `jiemian` → 界面新闻.
+- `user-import` → a reader-supplied article held in current page memory.
 
 This replaces the Phase 0 `yicai` identifier and migrates the source set from two to three active publishers with the user's approval on 2026-09-13.
 
@@ -221,3 +238,12 @@ This replaces the Phase 0 `yicai` identifier and migrates the source set from tw
 - `onTermSaveRequested(handler)`, `setTermSaveBusy(index, isBusy)`, `showTermSaveResult(index, isSaved, message)`, `markSavedTerms(records)`, `onVocabularyRequested(handler)`, `onHomeRequested(handler)`, `onVocabularyBack(handler)`, `onVocabularyRemoveRequested(handler)`, `showVocabularyView()`, `hideVocabularyView()`, `setVocabularyBusy(isBusy)`, `setVocabularyRemoveBusy(id, isBusy)`, `setVocabularyCount(count)`, `showVocabularyError(message, clearList)`, `showVocabularyEmpty(message)`, and `renderVocabulary(records)` are additive `ui.js` exports.
 - Phase 3 and the approved style-guide pass add DOM IDs `open-vocabulary`, `vocabulary-count`, `vocabulary-save-status`, `vocabulary`, `vocabulary-back`, `vocabulary-status`, `vocabulary-notice`, `vocabulary-list`, `mobile-home`, `mobile-vocabulary`, `home-intro`, and `reading-controls`.
 - The learning loop adds contextual word help, review queue/session, and known-word controls through the documented `word-help-*`, `review-*`, and `known-words*` DOM IDs.
+
+### Phase 4 import API and UI details
+
+- `POST /api/import` accepts JSON only. Link input is `{ mode: "url", url, learnerLevel }`; pasted input is `{ mode: "text", titleZh, sourceName, canonicalUrl, text, learnerLevel }`.
+- Link mode calls only the configured Firecrawl single-page extraction endpoint with the server-side `FIRECRAWL_API_KEY`. Paste mode never calls Firecrawl.
+- The route accepts public HTTPS URLs without credentials, rejects unsafe network targets, bounds request and response sizes, requires meaningful Chinese text, and returns only the standard response envelope.
+- `onImportRequested(handler)`, `onImportBack(handler)`, `onImportModeChanged(handler)`, `onImportSubmitted(handler)`, `onImportedArticleOpen(handler)`, `showImportView()`, `hideImportView(restoreHome)`, `setImportMode(mode)`, `getImportInput()`, `setImportBusy(isBusy)`, `showImportError(message)`, `clearImportPreview()`, `renderImportPreview(article)`, and `setLearnerLevel(value)` are additive `ui.js` exports.
+- Phase 4 adds DOM IDs `open-import`, `import-view`, `import-back`, `import-tab-url`, `import-tab-text`, `import-form`, `import-url-panel`, `import-url`, `import-text-panel`, `import-title-input`, `import-source-input`, `import-original-url`, `import-text`, `import-level`, `import-submit`, `import-status`, `import-error`, `import-preview`, `import-preview-content`, and `open-imported-article`.
+- Opening an imported article passes the normalized object into the existing reader, analysis, highlighting, contextual word-help, sentence-help, and vocabulary workflows without a second article fetch.

@@ -2,13 +2,14 @@ const previewMode = new URLSearchParams(globalThis.location?.search || "").get("
 
 export const config = Object.freeze({
   mode: previewMode ? "sample" : "live",
-  sampleDataPath: "./data/sample.json?v=high-resolution-images-1",
+  sampleDataPath: "./data/sample.json?v=phase4-import-1",
   apiRoutes: Object.freeze({
     articles: "/api/articles",
     article: "/api/article",
     analyze: "/api/analyze",
     explain: "/api/explain",
     word: "/api/word",
+    import: "/api/import",
   }),
   sampleDelayMs: 450,
   activeSourceIds: Object.freeze(["the-paper", "stcn", "jiemian"]),
@@ -29,6 +30,9 @@ export const config = Object.freeze({
   maximumSentenceCharacters: 500,
   requestTimeoutMs: 10000,
   analysisRequestTimeoutMs: 45000,
+  importRequestTimeoutMs: 25000,
+  minimumImportCharacters: 180,
+  maximumImportCharacters: 30000,
   storageKey: "daily-chinese-read:v1:vocabulary",
   storageVersion: 1,
   knownWordsStorageKey: "daily-chinese-read:v1:known-words",
@@ -39,5 +43,6 @@ export const config = Object.freeze({
     showPreviewStates: previewMode,
     languageScaffolding: true,
     vocabulary: true,
+    customArticleImport: true,
   }),
 });

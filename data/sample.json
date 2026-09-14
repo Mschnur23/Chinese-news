@@ -82,6 +82,28 @@
       ]
     }
   ],
+  "importedArticle": {
+    "id": "user-import:0000000000000001",
+    "originType": "url",
+    "titleZh": "人工智能从技术探索走向产业应用",
+    "sourceId": "user-import",
+    "sourceName": "example.cn",
+    "sourceHomepageUrl": "https://example.cn/",
+    "sourceDescription": "",
+    "canonicalUrl": "https://example.cn/articles/ai-industry",
+    "imageUrl": "",
+    "publishedAt": null,
+    "author": "",
+    "bodyText": "人工智能产业正在从技术探索走向规模化应用。\n\n越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。\n\n在制造、医疗和金融等行业，应用场景正在逐步清晰。\n\n与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。\n\n产业观察人士认为，企业开始把技术探索与实际行业需求结合起来，应用能否形成商业价值成为新的判断标准。\n\n制造、医疗和金融行业仍然需要改善数据质量与人才结构，才能获得可持续的投入回报。",
+    "paragraphs": [
+      "人工智能产业正在从技术探索走向规模化应用。",
+      "越来越多企业开始关注技术能否真正改善生产流程，并形成可持续的商业价值。",
+      "在制造、医疗和金融等行业，应用场景正在逐步清晰。",
+      "与此同时，数据质量、人才结构和投入回报仍然是企业需要面对的现实问题。",
+      "产业观察人士认为，企业开始把技术探索与实际行业需求结合起来，应用能否形成商业价值成为新的判断标准。",
+      "制造、医疗和金融行业仍然需要改善数据质量与人才结构，才能获得可持续的投入回报。"
+    ]
+  },
   "articleAnalysis": {
     "articleId": "the-paper-ai-industry-20260913",
     "gistEn": [

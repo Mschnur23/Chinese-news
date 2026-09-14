@@ -47,3 +47,10 @@ Run this list after every phase. Record failures; never remove a previously pass
 43. New and due saved words enter a spaced-repetition queue; Again, Good, and Easy persist review history and schedule progressively later reviews.
 44. “I know this” persists a normalized known word, removes its saved review records, excludes it from later analysis, and can be undone from My Words.
 45. Tapping an unhighlighted Chinese word requests pinyin and a concise contextual meaning only after the term and sentence are verified against the article.
+46. A valid pasted Chinese article preserves paragraph boundaries, previews successfully, and opens in the existing reader. *(Phase 4)*
+47. A valid public HTTPS article link is extracted server-side and opens with the same normalized reader structure. *(Phase 4)*
+48. Imported articles use the existing level-specific analysis, word-only highlights, tapped-word help, sentence help, article-in-brief, and vocabulary controls. *(Phase 4)*
+49. Invalid schemes, credentials, private or local targets, shorteners, unsupported ports, non-Chinese text, oversized input, and unreadable extraction responses produce bounded readable errors. *(Phase 4)*
+50. A missing or unavailable `FIRECRAWL_API_KEY` disables only Link import; Paste text remains usable. *(Phase 4)*
+51. Imported article bodies are not written to browser storage, logs, analytics, or response errors; saved vocabulary retains only its existing bounded fields. *(Phase 4)*
+52. Missing imported metadata creates no empty links and no fabricated author, publication-description, date, or source-link placeholder copy. *(Phase 4)*

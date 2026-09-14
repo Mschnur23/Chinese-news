@@ -1,11 +1,12 @@
-import { config } from "./config.js?v=word-only-highlights-1";
-import { source } from "./source.js?v=word-only-highlights-1";
+import { config } from "./config.js?v=phase4-import-1";
+import { source } from "./source.js?v=phase4-import-1";
 import {
   clearResults,
   clearReader,
   clearAnalysis,
   getLearnerLevel,
   getPreviewState,
+  hideImportView,
   hideVocabularyView,
   hideReviewSession,
   markSavedTerms,
@@ -13,6 +14,11 @@ import {
   onArticleSelected,
   onAnalysisRequested,
   onHomeRequested,
+  onImportBack,
+  onImportModeChanged,
+  onImportRequested,
+  onImportSubmitted,
+  onImportedArticleOpen,
   onKnownTermRequested,
   onKnownWordRestoreRequested,
   onReviewExit,
@@ -32,6 +38,7 @@ import {
   renderArticle,
   renderAnalysis,
   renderKnownWords,
+  renderImportPreview,
   renderReviewCard,
   renderReviewSummary,
   renderSentenceHelp,
@@ -43,6 +50,8 @@ import {
   setBusy,
   setSentenceHelpBusy,
   setKnownTermBusy,
+  setImportBusy,
+  setLearnerLevel,
   setReviewBusy,
   setPreviewControlsVisible,
   setStatus,
@@ -52,6 +61,8 @@ import {
   setVocabularyRemoveBusy,
   setWordHelpBusy,
   showTermSaveResult,
+  showImportError,
+  showImportView,
   showVocabularyEmpty,
   showVocabularyError,
   showVocabularyView,
@@ -63,7 +74,7 @@ import {
   showSentenceHelpError,
   showWordHelpError,
   revealReviewAnswer,
-} from "./ui.js?v=word-only-highlights-1";
+} from "./ui.js?v=phase4-import-1";
 
 let currentArticle = null;
 let articleRequestVersion = 0;
@@ -72,6 +83,8 @@ let sentenceRequestVersion = 0;
 let wordRequestVersion = 0;
 let reviewRecords = [];
 let reviewTotal = 0;
+let pendingImportedArticle = null;
+let pendingImportLearnerLevel = config.defaultLearnerLevel;
 
 const previewMessages = Object.freeze({
   empty: "No suitable public articles were found. Try again later.",
@@ -113,6 +126,49 @@ async function loadReading() {
   } finally {
     setBusy(false);
   }
+}
+
+function openImport() {
+  closeReader();
+  pendingImportedArticle = null;
+  showImportError("");
+  showImportView();
+}
+
+function cancelImport() {
+  pendingImportedArticle = null;
+  hideImportView();
+}
+
+async function importArticle(input) {
+  pendingImportedArticle = null;
+  showImportError("");
+  setImportBusy(true);
+  try {
+    const article = await source.importArticle(input);
+    pendingImportedArticle = article;
+    pendingImportLearnerLevel = input.learnerLevel || config.defaultLearnerLevel;
+    renderImportPreview(article);
+  } catch (error) {
+    showImportError(readableError(error, "This article could not be imported. Try pasting its text instead."));
+  } finally {
+    setImportBusy(false);
+  }
+}
+
+function openImportedArticle() {
+  if (!pendingImportedArticle) return;
+  articleRequestVersion += 1;
+  analysisRequestVersion += 1;
+  sentenceRequestVersion += 1;
+  wordRequestVersion += 1;
+  currentArticle = pendingImportedArticle;
+  hideImportView(false);
+  setLearnerLevel(pendingImportLearnerLevel);
+  setArticleBusy(true);
+  renderArticle(currentArticle);
+  setArticleBusy(false);
+  if (config.featureFlags.languageScaffolding) prepareAnalysis();
 }
 
 async function openArticle(id) {
@@ -359,10 +415,16 @@ function closeReader() {
 
 function goHome() {
   closeReader();
+  hideImportView();
   hideVocabularyView();
 }
 
 onLoadRequested(loadReading);
+onImportRequested(openImport);
+onImportBack(cancelImport);
+onImportModeChanged(() => { pendingImportedArticle = null; });
+onImportSubmitted(importArticle);
+onImportedArticleOpen(openImportedArticle);
 onPreviewStateChanged(loadReading);
 onArticleSelected(openArticle);
 onAnalysisRequested(prepareAnalysis);

@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=word-only-highlights-1";
+import { config } from "./config.js?v=phase4-import-1";
 
 const elements = {
   body: document.body,
@@ -12,6 +12,25 @@ const elements = {
   homeIntro: document.querySelector("#home-intro"),
   homeControls: document.querySelector("#reading-controls"),
   listSection: document.querySelector("#reading-list"),
+  importOpen: document.querySelector("#open-import"),
+  importView: document.querySelector("#import-view"),
+  importBack: document.querySelector("#import-back"),
+  importForm: document.querySelector("#import-form"),
+  importTabs: document.querySelector(".import-tabs"),
+  importUrlPanel: document.querySelector("#import-url-panel"),
+  importTextPanel: document.querySelector("#import-text-panel"),
+  importUrl: document.querySelector("#import-url"),
+  importTitle: document.querySelector("#import-title-input"),
+  importSource: document.querySelector("#import-source-input"),
+  importOriginalUrl: document.querySelector("#import-original-url"),
+  importText: document.querySelector("#import-text"),
+  importLevel: document.querySelector("#import-level"),
+  importSubmit: document.querySelector("#import-submit"),
+  importStatus: document.querySelector("#import-status"),
+  importError: document.querySelector("#import-error"),
+  importPreview: document.querySelector("#import-preview"),
+  importPreviewContent: document.querySelector("#import-preview-content"),
+  importedArticleOpen: document.querySelector("#open-imported-article"),
   reader: document.querySelector("#reader"),
   readerBack: document.querySelector("#reader-back"),
   readerStatus: document.querySelector("#reader-status"),
@@ -72,6 +91,7 @@ let currentAnalysis = null;
 let selectedSentence = "";
 let vocabularyReturnView = "list";
 let activeWordAnchor = null;
+let importMode = "url";
 
 // Keep the contextual definition outside the reading-tools layout so it can
 // remain attached to the tapped word regardless of where that word appears.
@@ -172,6 +192,125 @@ export function setBusy(isBusy) {
   elements.stateSelect.disabled = isBusy;
   elements.loadButton.setAttribute("aria-busy", String(isBusy));
   elements.loadButton.textContent = isBusy ? "正在准备…" : "查看今日文章";
+}
+
+export function setImportMode(mode) {
+  importMode = mode === "text" ? "text" : "url";
+  elements.importTabs.querySelectorAll("[data-import-mode]").forEach((button) => {
+    const selected = button.dataset.importMode === importMode;
+    button.setAttribute("aria-selected", String(selected));
+    button.tabIndex = selected ? 0 : -1;
+  });
+  elements.importUrlPanel.hidden = importMode !== "url";
+  elements.importTextPanel.hidden = importMode !== "text";
+  elements.importSubmit.textContent = importMode === "url" ? "Import link" : "Prepare pasted article";
+  showImportError("");
+  clearImportPreview();
+}
+
+export function showImportView() {
+  elements.homeIntro.hidden = true;
+  elements.homeControls.hidden = true;
+  elements.listSection.hidden = true;
+  elements.reader.hidden = true;
+  elements.vocabulary.hidden = true;
+  elements.importView.hidden = false;
+  elements.mobileHome.removeAttribute("aria-current");
+  elements.mobileVocabulary.removeAttribute("aria-current");
+  elements.importView.focus();
+}
+
+export function hideImportView(restoreHome = true) {
+  elements.importView.hidden = true;
+  if (restoreHome) {
+    elements.homeIntro.hidden = false;
+    elements.homeControls.hidden = false;
+    elements.listSection.hidden = false;
+    elements.mobileHome.setAttribute("aria-current", "page");
+  }
+}
+
+export function onImportRequested(handler) {
+  elements.importOpen.addEventListener("click", handler);
+}
+
+export function onImportBack(handler) {
+  elements.importBack.addEventListener("click", handler);
+}
+
+export function onImportModeChanged(handler) {
+  elements.importTabs.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-import-mode]");
+    if (!button) return;
+    setImportMode(button.dataset.importMode);
+    handler?.(importMode);
+  });
+}
+
+export function getImportInput() {
+  return importMode === "url"
+    ? { mode: "url", url: elements.importUrl.value.trim(), learnerLevel: elements.importLevel.value }
+    : {
+        mode: "text",
+        titleZh: elements.importTitle.value.trim(),
+        sourceName: elements.importSource.value.trim(),
+        canonicalUrl: elements.importOriginalUrl.value.trim(),
+        text: elements.importText.value.trim(),
+        learnerLevel: elements.importLevel.value,
+      };
+}
+
+export function onImportSubmitted(handler) {
+  elements.importForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    handler(getImportInput());
+  });
+}
+
+export function onImportedArticleOpen(handler) {
+  elements.importedArticleOpen.addEventListener("click", handler);
+}
+
+export function setImportBusy(isBusy) {
+  elements.importForm.setAttribute("aria-busy", String(isBusy));
+  elements.importForm.querySelectorAll("input, textarea, select, button").forEach((control) => { control.disabled = isBusy; });
+  elements.importBack.disabled = isBusy;
+  elements.importStatus.textContent = isBusy
+    ? (importMode === "url" ? "Extracting the article…" : "Preparing the article…")
+    : "";
+}
+
+export function showImportError(message) {
+  elements.importError.textContent = message;
+  elements.importError.hidden = !message;
+}
+
+export function clearImportPreview() {
+  elements.importPreview.hidden = true;
+  elements.importPreviewContent.replaceChildren();
+}
+
+export function renderImportPreview(article) {
+  const heading = createElement("h3", "", article.titleZh);
+  heading.id = "import-preview-title";
+  const details = [article.sourceName, `${article.paragraphs.length} paragraphs`, `${article.bodyText.length.toLocaleString()} characters`]
+    .filter(Boolean)
+    .join(" · ");
+  const excerpt = createElement("p", "import-preview__excerpt", article.paragraphs[0]);
+  const image = createArticleImage(article.imageUrl, article.titleZh, "import-preview__image");
+  elements.importPreviewContent.replaceChildren(
+    ...[image].filter(Boolean),
+    createElement("p", "eyebrow", "Ready to read"),
+    heading,
+    createElement("p", "import-preview__meta", details),
+    excerpt,
+  );
+  elements.importPreview.hidden = false;
+  elements.importedArticleOpen.focus();
+}
+
+export function setLearnerLevel(value) {
+  if (config.learnerLevels.includes(value)) elements.learnerLevel.value = value;
 }
 
 export function setStatus(message) {
@@ -295,17 +434,19 @@ export function renderArticle(article) {
   const header = createElement("header", "reader__header");
   const sourceLine = createElement("div", "reader__source-line");
   const source = createElement("span", "source-label", article.sourceName || "Source unavailable");
-  const date = createElement("time", "", formatPublicationDate(article.publishedAt));
-  if (article.publishedAt) date.dateTime = article.publishedAt;
-  sourceLine.append(source, date);
+  const date = article.publishedAt ? createElement("time", "", formatPublicationDate(article.publishedAt)) : null;
+  if (date) date.dateTime = article.publishedAt;
+  sourceLine.append(...[source, date].filter(Boolean));
 
   const title = createElement("h2", "reader__title", article.titleZh || "标题暂缺");
-  const byline = createElement("p", "reader__byline", article.author ? `By ${article.author}` : "Author unavailable");
-  const original = createElement("a", "reader__original", "View the original article ↗");
-  original.href = article.canonicalUrl;
-  original.target = "_blank";
-  original.rel = "noopener noreferrer";
-  header.append(sourceLine, title, byline, original);
+  const byline = article.author ? createElement("p", "reader__byline", `By ${article.author}`) : null;
+  const original = article.canonicalUrl ? createElement("a", "reader__original", "View the original article ↗") : null;
+  if (original) {
+    original.href = article.canonicalUrl;
+    original.target = "_blank";
+    original.rel = "noopener noreferrer";
+  }
+  header.append(...[sourceLine, title, byline, original].filter(Boolean));
 
   const image = createArticleImage(article.imageUrl, article.titleZh, "reader__image");
 
@@ -320,16 +461,18 @@ export function renderArticle(article) {
   publication.setAttribute("aria-label", `About ${article.sourceName || "this publication"}`);
   const publicationKicker = createElement("p", "eyebrow", "About this publication");
   const publicationName = createElement("h3", "publication-note__name", article.sourceName || "Publication unavailable");
-  const publicationDescription = createElement(
-    "p",
-    "publication-note__description",
-    article.sourceDescription || "No publication description is available.",
-  );
-  const publicationLink = createElement("a", "publication-note__link", `Visit ${article.sourceName || "publication"} ↗`);
-  publicationLink.href = article.sourceHomepageUrl;
-  publicationLink.target = "_blank";
-  publicationLink.rel = "noopener noreferrer";
-  publication.append(publicationKicker, publicationName, publicationDescription, publicationLink);
+  const publicationDescription = article.sourceDescription
+    ? createElement("p", "publication-note__description", article.sourceDescription)
+    : null;
+  const publicationLink = article.sourceHomepageUrl
+    ? createElement("a", "publication-note__link", `Visit ${article.sourceName || "publication"} ↗`)
+    : null;
+  if (publicationLink) {
+    publicationLink.href = article.sourceHomepageUrl;
+    publicationLink.target = "_blank";
+    publicationLink.rel = "noopener noreferrer";
+  }
+  publication.append(...[publicationKicker, publicationName, publicationDescription, publicationLink].filter(Boolean));
 
   elements.readerContent.replaceChildren(...[
     header,
@@ -666,6 +809,7 @@ export function clearReader() {
   elements.homeIntro.hidden = false;
   elements.homeControls.hidden = false;
   elements.languageTools.hidden = true;
+  elements.importView.hidden = true;
   currentReaderBody = null;
   currentArticle = null;
   currentAnalysis = null;
@@ -746,6 +890,7 @@ export function showVocabularyView() {
   elements.reader.hidden = true;
   elements.homeIntro.hidden = true;
   elements.homeControls.hidden = true;
+  elements.importView.hidden = true;
   elements.vocabulary.hidden = false;
   elements.vocabularyOpen.setAttribute("aria-expanded", "true");
   elements.mobileVocabulary.setAttribute("aria-current", "page");
@@ -864,16 +1009,18 @@ export function renderVocabulary(records) {
     const meaning = createElement("p", "vocabulary-card__meaning", record.meaningEn || "Meaning unavailable");
     const context = createElement("blockquote", "vocabulary-card__context", record.contextSentenceZh || "Context unavailable");
     const articleTitle = createElement("p", "vocabulary-card__article", record.articleTitleZh || "Article title unavailable");
-    const metadata = createElement(
-      "p",
-      "vocabulary-card__meta",
-      `${record.sourceName || "Source unavailable"} · ${formatPublicationDate(record.publishedAt)} · Saved ${formatPublicationDate(record.savedAt)}`,
-    );
+    const metadata = createElement("p", "vocabulary-card__meta", [
+      record.sourceName || "Source unavailable",
+      record.publishedAt ? formatPublicationDate(record.publishedAt) : "",
+      `Saved ${formatPublicationDate(record.savedAt)}`,
+    ].filter(Boolean).join(" · "));
     const actions = createElement("div", "vocabulary-card__actions");
-    const original = createElement("a", "vocabulary-card__link", "Open original article ↗");
-    original.href = record.canonicalUrl;
-    original.target = "_blank";
-    original.rel = "noopener noreferrer";
+    const original = record.canonicalUrl ? createElement("a", "vocabulary-card__link", "Open original article ↗") : null;
+    if (original) {
+      original.href = record.canonicalUrl;
+      original.target = "_blank";
+      original.rel = "noopener noreferrer";
+    }
     const remove = createElement("button", "text-button vocabulary-card__remove", "Remove");
     remove.type = "button";
     remove.dataset.vocabularyId = record.id;
@@ -882,7 +1029,7 @@ export function renderVocabulary(records) {
     known.type = "button";
     known.dataset.vocabularyKnown = record.termZh;
     known.setAttribute("aria-label", `Mark ${record.termZh || "this term"} as known`);
-    actions.append(original, known, remove);
+    actions.append(...[original, known, remove].filter(Boolean));
     card.append(heading, meaning, context, articleTitle, metadata, actions);
     fragment.append(card);
   });

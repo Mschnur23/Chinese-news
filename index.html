@@ -7,8 +7,8 @@
     <meta name="theme-color" content="#1b1916">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102b2b'/%3E%3Cpath d='M18 18h28v7H35v21h-7V25H18z' fill='%23f3e9d2'/%3E%3Ccircle cx='45' cy='43' r='6' fill='%23e05a3f'/%3E%3C/svg%3E">
     <title>Daily Chinese Read</title>
-    <link rel="stylesheet" href="./style.css?v=word-only-highlights-1">
-    <script type="module" src="./app.js?v=word-only-highlights-1"></script>
+    <link rel="stylesheet" href="./style.css?v=phase4-import-1">
+    <script type="module" src="./app.js?v=phase4-import-1"></script>
   </head>
   <body>
     <a class="skip-link" href="#article-list">Skip to articles</a>
@@ -37,7 +37,10 @@
       </section>
 
       <section class="controls" id="reading-controls" aria-label="Reading controls">
-        <button class="primary-button" id="load-reading" type="button">查看今日文章</button>
+        <div class="controls__actions">
+          <button class="primary-button" id="load-reading" type="button">查看今日文章</button>
+          <button class="secondary-button" id="open-import" type="button">Use your own article</button>
+        </div>
         <label class="state-control" id="preview-state-control" for="preview-state" hidden>
           Preview state
           <select id="preview-state">
@@ -47,6 +50,58 @@
             <option value="error">Error</option>
           </select>
         </label>
+      </section>
+
+      <section class="import-view" id="import-view" aria-labelledby="import-title" tabindex="-1" hidden>
+        <button class="text-button" id="import-back" type="button">← Back to today’s selection</button>
+        <header class="import-view__header">
+          <p class="eyebrow">Your reading</p>
+          <h2 id="import-title">Turn any Chinese article into a lesson</h2>
+          <p>Paste a public article link, or add the text directly. The article stays in Chinese and receives the same vocabulary and sentence support.</p>
+        </header>
+
+        <div class="import-tabs" role="tablist" aria-label="Article import method">
+          <button id="import-tab-url" type="button" role="tab" aria-selected="true" aria-controls="import-url-panel" data-import-mode="url">Article link</button>
+          <button id="import-tab-text" type="button" role="tab" aria-selected="false" aria-controls="import-text-panel" data-import-mode="text">Paste text</button>
+        </div>
+
+        <form class="import-form" id="import-form" novalidate>
+          <div id="import-url-panel" role="tabpanel" aria-labelledby="import-tab-url">
+            <label for="import-url">Public HTTPS article link</label>
+            <input id="import-url" name="url" type="url" inputmode="url" autocomplete="url" placeholder="https://example.com/article" required>
+            <p class="form-note">The link is sent from our server to Firecrawl for single-page extraction. If it cannot be read, you can paste the article text instead.</p>
+          </div>
+
+          <div id="import-text-panel" role="tabpanel" aria-labelledby="import-tab-text" hidden>
+            <div class="import-form__grid">
+              <label for="import-title-input">Article title <span>Required</span></label>
+              <input id="import-title-input" name="titleZh" type="text" maxlength="500" required>
+              <label for="import-source-input">Publication <span>Optional</span></label>
+              <input id="import-source-input" name="sourceName" type="text" maxlength="100">
+              <label for="import-original-url">Original link <span>Optional</span></label>
+              <input id="import-original-url" name="canonicalUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://example.com/article">
+            </div>
+            <label for="import-text">Chinese article text <span>Required</span></label>
+            <textarea id="import-text" name="text" rows="14" minlength="180" maxlength="30000" placeholder="在这里粘贴中文正文……" required></textarea>
+            <p class="form-note">Use article material you are comfortable sending for language analysis; do not paste private or confidential text.</p>
+          </div>
+
+          <div class="import-form__footer">
+            <label for="import-level">Mandarin level</label>
+            <select id="import-level" name="learnerLevel">
+              <option value="Intermediate">Intermediate · 20 terms</option>
+              <option value="Advanced" selected>Advanced · 10 terms</option>
+            </select>
+            <button class="primary-button" id="import-submit" type="submit">Import article</button>
+          </div>
+          <p class="status" id="import-status" role="status" aria-live="polite"></p>
+          <div class="notice notice--error" id="import-error" role="alert" hidden></div>
+        </form>
+
+        <section class="import-preview" id="import-preview" aria-labelledby="import-preview-title" hidden>
+          <div id="import-preview-content"></div>
+          <button class="primary-button" id="open-imported-article" type="button">Open reading</button>
+        </section>
       </section>
 
       <section class="reading-list" id="reading-list" aria-labelledby="selection-title">

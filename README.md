@@ -1,6 +1,6 @@
 # Daily Chinese Read
 
-A focused reading workspace for intermediate-to-advanced Mandarin learners. The current checkpoint is **Phase 3 — personal vocabulary** with live public retrieval from 澎湃新闻, 证券时报, and 界面新闻, grounded language support, and a contextual vocabulary list that persists in the current browser.
+A focused reading workspace for intermediate-to-advanced Mandarin learners. The current checkpoint is **Phase 4 — bring your own article** with live public retrieval from 澎湃新闻, 证券时报, and 界面新闻, plus URL and pasted-text imports that use the same grounded learning tools.
 
 Language guides return exactly 20 grounded vocabulary terms for Intermediate readers and exactly 10 for Advanced readers.
 Within the level-appropriate difficult/useful candidates, repeated terms are prioritized by exact-occurrence frequency; difficulty and contextual usefulness break ties, and easy function words are never selected for frequency alone.
@@ -26,12 +26,15 @@ Phase 2 uses the OpenAI Responses API with Structured Outputs. Add these server-
 ```sh
 OPENAI_API_KEY=your_server_side_key
 OPENAI_MODEL=gpt-5-mini
+FIRECRAWL_API_KEY=your_server_side_firecrawl_key
 ```
 
-`OPENAI_MODEL` is optional and defaults to `gpt-5-mini`. Use `gpt-5-nano` only for simple repetitive work such as classification, extraction, tagging, or basic summarization; Phase 2's contextual language analysis defaults to `gpt-5-mini`. `.env.local` is ignored by Git.
+`OPENAI_MODEL` is optional and defaults to `gpt-5-mini`. Use `gpt-5-nano` only for simple repetitive work such as classification, extraction, tagging, or basic summarization; contextual language analysis defaults to `gpt-5-mini`. `FIRECRAWL_API_KEY` is required only for the Article link import tab. Paste text works without Firecrawl. `.env.local` is ignored by Git.
 Copy `.env.example` to `.env.local` for local development, then add the real key only to `.env.local` and the Vercel project environment.
 
 Discovery continues to use a transparent interest, recency, and topic heuristic. The model sees only the selected retrieved article, learner level, and bounded interests. Model output is checked server-side before it reaches the reader.
+
+The custom importer accepts one public HTTPS link or a title plus pasted Chinese text. Link mode makes one server-side Firecrawl single-page extraction request; paste mode performs local app validation and normalization without consuming a Firecrawl credit. Imported article bodies stay in current page memory and are not saved to browser storage.
 
 Saved vocabulary uses versioned browser `localStorage`; it never leaves the device and requires no account or database. Duplicate identity is based on the normalized term, article ID, and original context sentence. If stored data is malformed or unavailable, the app reports a recoverable error and leaves the existing value untouched.
 
@@ -44,6 +47,7 @@ The interface follows `DailyChineseRead_StyleGuide.md`: a light editorial canvas
 - Publication time and description use neutral fallbacks when a listing page does not expose reliable metadata.
 - Full article text is fetched only after a reader selects a card.
 - If AI analysis is unavailable or invalid, the original article remains readable and the user can retry.
+- Link import depends on Firecrawl extraction quality; when a link cannot be read, paste the article text instead.
 
 ## Verify
 
@@ -67,6 +71,7 @@ The target is Vercel. A deployment must contain no secret values and must be ver
 - `config.js` contains browser-safe tunable values.
 - `api/articles.js` owns bounded discovery and ranking; `api/article.js` retrieves one allowlisted article.
 - `api/analyze.js` and `api/explain.js` own grounded model requests; prompts, provider configuration, and credentials remain server-side.
+- `api/import.js` owns imported-article validation; its Firecrawl adapter is the only module that knows the extraction provider API.
 - Publisher-specific parsing stays in separate modules under `api/_shared/adapters/`.
 - `CONTRACTS.md` records stable interfaces; changes under its protected heading require approval.
 

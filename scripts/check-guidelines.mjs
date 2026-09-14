@@ -38,6 +38,8 @@ const requiredFiles = [
   "source.js",
   "api/word.js",
   "api/import.js",
+  "api/related.js",
+  "api/_shared/related.js",
   "api/_shared/import.js",
   "api/_shared/import-adapters/firecrawl.js",
   "config.js",
@@ -46,6 +48,7 @@ const requiredFiles = [
   "CHECKS.md",
   "README.md",
   "Phase4_CustomArticleImport.md",
+  "Phase5_RelatedReadingAndSavedArticles.md",
   ".env.example",
   ".gitignore",
 ];
@@ -77,7 +80,7 @@ const ui = await text("ui.js");
 });
 
 const source = await text("source.js");
-["importArticle", "load", "detail", "analyze", "explain", "lookupWord", "save", "list", "remove", "reviewQueue", "review", "listKnown", "markKnown", "unmarkKnown"].forEach((name) => {
+["related", "importArticle", "load", "detail", "analyze", "explain", "lookupWord", "save", "list", "remove", "saveArticle", "listArticles", "removeArticle", "reviewQueue", "review", "listKnown", "markKnown", "unmarkKnown"].forEach((name) => {
   check(new RegExp(`async\\s+${name}\\s*\\(`).test(source), `source must expose async ${name}()`);
 });
 
@@ -159,8 +162,29 @@ requiredIds.forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `in
   "import-preview-content",
   "open-imported-article",
 ].forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `index.html is missing Phase 4 DOM id: ${id}`));
+[
+  "reader-save", "save-article", "article-save-status", "related-reading", "related-reading-title",
+  "related-reading-status", "related-reading-error", "related-reading-list", "related-reading-retry",
+  "saved-articles", "saved-articles-title", "saved-articles-status", "saved-articles-notice", "saved-articles-list",
+].forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `index.html is missing Phase 5 DOM id: ${id}`));
 
 const sample = JSON.parse(await text("data/sample.json"));
+check(Array.isArray(sample.relatedReading) && sample.relatedReading.length === 3, "Sample data must contain exactly three related English links");
+check(sample.relatedReading.every((item) => item.url.startsWith("https://")), "Sample related-reading links must use HTTPS");
+const relatedHelpers = await import(new URL("../api/_shared/related.js", import.meta.url));
+const validatedRelated = relatedHelpers.validateRelatedReading(
+  { items: sample.relatedReading },
+  sample.relatedReading.map((item) => item.url),
+);
+check(validatedRelated.items.length === 3, "Related-reading validation must accept three cited, allowlisted links");
+let uncitedRelatedRejected = false;
+try {
+  relatedHelpers.validateRelatedReading({ items: sample.relatedReading }, []);
+} catch {
+  uncitedRelatedRejected = true;
+}
+check(uncitedRelatedRejected, "Related-reading validation must reject uncited model links");
+check(!/bodyText\s*:|paragraphs\s*:/.test(source.match(/function normalizeSavedArticle[\s\S]*?function readSavedArticlesStore/)?.[0] || ""), "Saved article records must not contain article bodies or paragraphs");
 check(Array.isArray(sample.articleSummaries) && sample.articleSummaries.length >= 3 && sample.articleSummaries.length <= 5, "Sample data must contain 3–5 article summaries");
 const summaryKeys = ["id", "titleZh", "sourceId", "sourceName", "canonicalUrl", "imageUrl", "publishedAt", "topic", "description", "whyItMatters", "whyItFits", "difficulty", "readingMinutes"];
 for (const [index, item] of (sample.articleSummaries || []).entries()) {

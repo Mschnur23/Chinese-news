@@ -2,7 +2,7 @@ const previewMode = new URLSearchParams(globalThis.location?.search || "").get("
 
 export const config = Object.freeze({
   mode: previewMode ? "sample" : "live",
-  sampleDataPath: "./data/sample.json?v=phase4-import-1",
+  sampleDataPath: "./data/sample.json?v=phase5-library-1",
   apiRoutes: Object.freeze({
     articles: "/api/articles",
     article: "/api/article",
@@ -10,6 +10,7 @@ export const config = Object.freeze({
     explain: "/api/explain",
     word: "/api/word",
     import: "/api/import",
+    related: "/api/related",
   }),
   sampleDelayMs: 450,
   activeSourceIds: Object.freeze(["the-paper", "stcn", "jiemian"]),
@@ -31,12 +32,15 @@ export const config = Object.freeze({
   requestTimeoutMs: 10000,
   analysisRequestTimeoutMs: 45000,
   importRequestTimeoutMs: 25000,
+  relatedReadingRequestTimeoutMs: 45000,
   minimumImportCharacters: 180,
   maximumImportCharacters: 30000,
   storageKey: "daily-chinese-read:v1:vocabulary",
   storageVersion: 1,
   knownWordsStorageKey: "daily-chinese-read:v1:known-words",
   knownWordsStorageVersion: 1,
+  savedArticlesStorageKey: "daily-chinese-read:v1:articles",
+  savedArticlesStorageVersion: 1,
   reviewIntervalsDays: Object.freeze([0, 1, 3, 7, 14, 30, 60, 120]),
   featureFlags: Object.freeze({
     liveRetrieval: true,
@@ -44,5 +48,7 @@ export const config = Object.freeze({
     languageScaffolding: true,
     vocabulary: true,
     customArticleImport: true,
+    relatedReading: true,
+    savedArticles: true,
   }),
 });

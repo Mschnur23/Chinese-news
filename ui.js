@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=phase4-import-1";
+import { config } from "./config.js?v=phase5-library-1";
 
 const elements = {
   body: document.body,
@@ -36,6 +36,14 @@ const elements = {
   readerStatus: document.querySelector("#reader-status"),
   readerError: document.querySelector("#reader-error"),
   readerContent: document.querySelector("#reader-content"),
+  readerSave: document.querySelector("#reader-save"),
+  saveArticle: document.querySelector("#save-article"),
+  articleSaveStatus: document.querySelector("#article-save-status"),
+  relatedReading: document.querySelector("#related-reading"),
+  relatedReadingStatus: document.querySelector("#related-reading-status"),
+  relatedReadingError: document.querySelector("#related-reading-error"),
+  relatedReadingList: document.querySelector("#related-reading-list"),
+  relatedReadingRetry: document.querySelector("#related-reading-retry"),
   languageTools: document.querySelector("#language-tools"),
   learnerLevel: document.querySelector("#learner-level"),
   analyzeButton: document.querySelector("#analyze-article"),
@@ -82,6 +90,10 @@ const elements = {
   reviewExit: document.querySelector("#review-exit"),
   knownWords: document.querySelector("#known-words"),
   knownWordsList: document.querySelector("#known-words-list"),
+  savedArticles: document.querySelector("#saved-articles"),
+  savedArticlesStatus: document.querySelector("#saved-articles-status"),
+  savedArticlesNotice: document.querySelector("#saved-articles-notice"),
+  savedArticlesList: document.querySelector("#saved-articles-list"),
 };
 
 let lastArticleTrigger = null;
@@ -422,6 +434,8 @@ export function setArticleBusy(isBusy) {
     elements.listSection.hidden = true;
     elements.readerContent.replaceChildren();
     elements.languageTools.hidden = true;
+    elements.readerSave.hidden = true;
+    clearRelatedReading();
   }
 }
 
@@ -489,10 +503,87 @@ export function renderArticle(article) {
   elements.selectionPreview.textContent = "No sentence selected yet.";
   elements.explainButton.disabled = true;
   elements.languageTools.hidden = false;
+  elements.readerSave.hidden = !article.canonicalUrl;
+  elements.saveArticle.disabled = false;
+  elements.saveArticle.textContent = "Save article";
+  elements.articleSaveStatus.textContent = article.canonicalUrl ? "" : "Add an original link to save this article.";
+  clearRelatedReading();
   clearAnalysis(article);
   clearSentenceHelp();
   clearWordHelp();
   elements.reader.focus();
+}
+
+export function onArticleSaveRequested(handler) {
+  elements.saveArticle.addEventListener("click", () => {
+    if (currentArticle?.canonicalUrl) handler(currentArticle);
+  });
+}
+
+export function setArticleSaveBusy(isBusy) {
+  elements.saveArticle.disabled = isBusy;
+  elements.saveArticle.textContent = isBusy ? "Saving…" : "Save article";
+}
+
+export function showArticleSaveResult(isSaved, message) {
+  elements.saveArticle.disabled = isSaved;
+  elements.saveArticle.textContent = isSaved ? "Saved ✓" : "Save article";
+  elements.articleSaveStatus.textContent = message;
+}
+
+export function markArticleSaved(records) {
+  if (!currentArticle?.canonicalUrl) return;
+  const isSaved = records.some((record) => record.canonicalUrl === currentArticle.canonicalUrl);
+  showArticleSaveResult(isSaved, isSaved ? "Saved to your reading list." : "");
+}
+
+export function clearRelatedReading() {
+  elements.relatedReading.hidden = true;
+  elements.relatedReadingList.replaceChildren();
+  elements.relatedReadingStatus.textContent = "";
+  elements.relatedReadingError.textContent = "";
+  elements.relatedReadingError.hidden = true;
+  elements.relatedReadingRetry.hidden = true;
+}
+
+export function setRelatedReadingBusy(isBusy) {
+  elements.relatedReading.hidden = false;
+  elements.relatedReading.setAttribute("aria-busy", String(isBusy));
+  elements.relatedReadingStatus.textContent = isBusy ? "Finding closely related reporting…" : "";
+  elements.relatedReadingRetry.disabled = isBusy;
+}
+
+export function renderRelatedReading(items) {
+  const fragment = document.createDocumentFragment();
+  items.forEach((item) => {
+    const card = createElement("article", "related-card");
+    const publication = createElement("p", "eyebrow", item.publication);
+    const heading = createElement("h3");
+    const link = createElement("a", "related-card__link", item.titleEn);
+    link.href = item.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    heading.append(link);
+    card.append(publication, heading, createElement("p", "related-card__description", item.descriptionEn));
+    fragment.append(card);
+  });
+  elements.relatedReadingList.replaceChildren(fragment);
+  elements.relatedReadingError.hidden = true;
+  elements.relatedReadingRetry.hidden = true;
+  elements.relatedReadingStatus.textContent = items.length ? `${items.length} English articles selected.` : "";
+  elements.relatedReading.hidden = false;
+}
+
+export function showRelatedReadingError(message) {
+  elements.relatedReading.hidden = false;
+  elements.relatedReadingError.textContent = message;
+  elements.relatedReadingError.hidden = !message;
+  elements.relatedReadingRetry.hidden = !message;
+  elements.relatedReadingStatus.textContent = "";
+}
+
+export function onRelatedReadingRetry(handler) {
+  elements.relatedReadingRetry.addEventListener("click", handler);
 }
 
 function appendHighlightedParagraph(paragraphElement, text, terms) {
@@ -809,6 +900,8 @@ export function clearReader() {
   elements.homeIntro.hidden = false;
   elements.homeControls.hidden = false;
   elements.languageTools.hidden = true;
+  elements.readerSave.hidden = true;
+  clearRelatedReading();
   elements.importView.hidden = true;
   currentReaderBody = null;
   currentArticle = null;
@@ -848,6 +941,13 @@ export function onVocabularyRemoveRequested(handler) {
   elements.vocabularyList.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-vocabulary-id]");
     if (button) handler(button.dataset.vocabularyId);
+  });
+}
+
+export function onSavedArticleRemoveRequested(handler) {
+  elements.savedArticlesList.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-saved-article-id]");
+    if (button) handler(button.dataset.savedArticleId);
   });
 }
 
@@ -921,10 +1021,54 @@ export function setVocabularyBusy(isBusy) {
   elements.mobileVocabulary.disabled = isBusy;
   elements.vocabularyBack.disabled = isBusy;
   if (isBusy) {
-    elements.vocabularyStatus.textContent = "Loading saved vocabulary…";
-  } else if (elements.vocabularyStatus.textContent === "Loading saved vocabulary…") {
+    elements.vocabularyStatus.textContent = "Loading your saved items…";
+  } else if (elements.vocabularyStatus.textContent === "Loading your saved items…") {
     elements.vocabularyStatus.textContent = "";
   }
+}
+
+export function renderSavedArticles(records) {
+  elements.savedArticlesNotice.hidden = true;
+  elements.savedArticlesNotice.textContent = "";
+  const fragment = document.createDocumentFragment();
+  records.forEach((record) => {
+    const card = createElement("article", "saved-article-card");
+    const copy = createElement("div");
+    const title = createElement("h4");
+    const link = createElement("a", "saved-article-card__link", record.titleZh);
+    link.href = record.canonicalUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    title.append(link);
+    copy.append(title, createElement("p", "saved-article-card__meta", `${record.sourceName} · Saved ${formatPublicationDate(record.savedAt)}`));
+    const remove = createElement("button", "text-button", "Remove");
+    remove.type = "button";
+    remove.dataset.savedArticleId = record.id;
+    card.append(copy, remove);
+    fragment.append(card);
+  });
+  elements.savedArticlesList.replaceChildren(fragment);
+}
+
+export function showSavedArticlesEmpty(message) {
+  elements.savedArticlesNotice.className = "notice notice--empty";
+  elements.savedArticlesNotice.textContent = message;
+  elements.savedArticlesNotice.hidden = false;
+  elements.savedArticlesList.replaceChildren();
+}
+
+export function showSavedArticlesError(message) {
+  elements.savedArticlesNotice.className = "notice notice--error";
+  elements.savedArticlesNotice.textContent = message;
+  elements.savedArticlesNotice.hidden = !message;
+}
+
+export function setSavedArticleRemoveBusy(id, isBusy) {
+  const button = [...elements.savedArticlesList.querySelectorAll("button[data-saved-article-id]")]
+    .find((item) => item.dataset.savedArticleId === id);
+  if (!button) return;
+  button.disabled = isBusy;
+  button.textContent = isBusy ? "Removing…" : "Remove";
 }
 
 export function setVocabularyRemoveBusy(id, isBusy) {

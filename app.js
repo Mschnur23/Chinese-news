@@ -1,5 +1,5 @@
-import { config } from "./config.js?v=phase4-import-1";
-import { source } from "./source.js?v=phase4-import-1";
+import { config } from "./config.js?v=phase5-library-1";
+import { source } from "./source.js?v=phase5-library-1";
 import {
   clearResults,
   clearReader,
@@ -12,6 +12,7 @@ import {
   markSavedTerms,
   markKnownTerms,
   onArticleSelected,
+  onArticleSaveRequested,
   onAnalysisRequested,
   onHomeRequested,
   onImportBack,
@@ -35,7 +36,11 @@ import {
   onLoadRequested,
   onPreviewStateChanged,
   onReaderBack,
+  onRelatedReadingRetry,
+  onSavedArticleRemoveRequested,
   renderArticle,
+  renderRelatedReading,
+  renderSavedArticles,
   renderAnalysis,
   renderKnownWords,
   renderImportPreview,
@@ -46,6 +51,7 @@ import {
   renderVocabulary,
   renderList,
   setArticleBusy,
+  setArticleSaveBusy,
   setAnalysisBusy,
   setBusy,
   setSentenceHelpBusy,
@@ -60,6 +66,8 @@ import {
   setVocabularyCount,
   setVocabularyRemoveBusy,
   setWordHelpBusy,
+  setRelatedReadingBusy,
+  setSavedArticleRemoveBusy,
   showTermSaveResult,
   showImportError,
   showImportView,
@@ -73,14 +81,20 @@ import {
   showNotice,
   showSentenceHelpError,
   showWordHelpError,
+  showArticleSaveResult,
+  showRelatedReadingError,
+  showSavedArticlesEmpty,
+  showSavedArticlesError,
+  markArticleSaved,
   revealReviewAnswer,
-} from "./ui.js?v=phase4-import-1";
+} from "./ui.js?v=phase5-library-1";
 
 let currentArticle = null;
 let articleRequestVersion = 0;
 let analysisRequestVersion = 0;
 let sentenceRequestVersion = 0;
 let wordRequestVersion = 0;
+let relatedRequestVersion = 0;
 let reviewRecords = [];
 let reviewTotal = 0;
 let pendingImportedArticle = null;
@@ -167,8 +181,10 @@ function openImportedArticle() {
   setLearnerLevel(pendingImportLearnerLevel);
   setArticleBusy(true);
   renderArticle(currentArticle);
+  source.listArticles().then(markArticleSaved).catch(() => {});
   setArticleBusy(false);
   if (config.featureFlags.languageScaffolding) prepareAnalysis();
+  if (config.featureFlags.relatedReading) prepareRelatedReading();
 }
 
 async function openArticle(id) {
@@ -183,6 +199,7 @@ async function openArticle(id) {
     if (requestVersion !== articleRequestVersion) return;
     currentArticle = article;
     renderArticle(article);
+    source.listArticles().then(markArticleSaved).catch(() => {});
   } catch (error) {
     showArticleError(readableError(error, "This article could not be prepared. Choose another article or try again."));
   } finally {
@@ -191,6 +208,36 @@ async function openArticle(id) {
 
   if (currentArticle && config.featureFlags.languageScaffolding) {
     prepareAnalysis();
+  }
+  if (currentArticle && config.featureFlags.relatedReading) prepareRelatedReading();
+}
+
+async function prepareRelatedReading() {
+  if (!currentArticle) return;
+  const article = currentArticle;
+  const requestVersion = ++relatedRequestVersion;
+  setRelatedReadingBusy(true);
+  try {
+    const result = await source.related(article);
+    if (requestVersion !== relatedRequestVersion || article !== currentArticle) return;
+    renderRelatedReading(result.items);
+  } catch (error) {
+    if (requestVersion !== relatedRequestVersion) return;
+    showRelatedReadingError(readableError(error, "Related English reporting could not be loaded. The Chinese article is still available."));
+  } finally {
+    if (requestVersion === relatedRequestVersion) setRelatedReadingBusy(false);
+  }
+}
+
+async function saveCurrentArticle(article) {
+  setArticleSaveBusy(true);
+  try {
+    const result = await source.saveArticle(article);
+    setArticleSaveBusy(false);
+    showArticleSaveResult(true, result.added ? "Saved to your reading list." : "This article is already saved.");
+  } catch (error) {
+    setArticleSaveBusy(false);
+    showArticleSaveResult(false, readableError(error, "This article link could not be saved."));
   }
 }
 
@@ -275,19 +322,35 @@ async function openVocabulary() {
   showVocabularyError("");
   setVocabularyBusy(true);
   try {
-    const [records, due, known] = await Promise.all([source.list(), source.reviewQueue(), source.listKnown()]);
+    const [records, due, known, articles] = await Promise.all([source.list(), source.reviewQueue(), source.listKnown(), source.listArticles()]);
     setVocabularyCount(records.length);
     reviewRecords = due;
     reviewTotal = due.length;
     renderReviewSummary(due);
     hideReviewSession();
     renderKnownWords(known);
+    if (articles.length) renderSavedArticles(articles);
+    else showSavedArticlesEmpty("No saved articles yet. Save an original link while reading.");
     if (records.length) renderVocabulary(records);
     else showVocabularyEmpty("No saved terms yet. Open an article and save a term from its language guide.");
   } catch (error) {
     showVocabularyError(readableError(error, "Saved vocabulary could not be loaded. Your existing browser data was left unchanged."));
   } finally {
     setVocabularyBusy(false);
+  }
+}
+
+async function removeSavedArticle(id) {
+  setSavedArticleRemoveBusy(id, true);
+  try {
+    const result = await source.removeArticle(id);
+    if (result.records.length) renderSavedArticles(result.records);
+    else showSavedArticlesEmpty("No saved articles yet. Save an original link while reading.");
+    try { markArticleSaved(result.records); } catch { /* The reader may not be active. */ }
+  } catch (error) {
+    showSavedArticlesError(readableError(error, "That article link could not be removed."));
+  } finally {
+    setSavedArticleRemoveBusy(id, false);
   }
 }
 
@@ -407,6 +470,7 @@ function closeReader() {
   analysisRequestVersion += 1;
   sentenceRequestVersion += 1;
   wordRequestVersion += 1;
+  relatedRequestVersion += 1;
   currentArticle = null;
   clearReader();
   setAnalysisBusy(false);
@@ -427,6 +491,8 @@ onImportSubmitted(importArticle);
 onImportedArticleOpen(openImportedArticle);
 onPreviewStateChanged(loadReading);
 onArticleSelected(openArticle);
+onArticleSaveRequested(saveCurrentArticle);
+onRelatedReadingRetry(prepareRelatedReading);
 onAnalysisRequested(prepareAnalysis);
 onTermSaveRequested(saveVocabularyTerm);
 onKnownTermRequested(markTermKnown);
@@ -437,6 +503,7 @@ onHomeRequested(goHome);
 onVocabularyRequested(openVocabulary);
 onVocabularyBack(hideVocabularyView);
 onVocabularyRemoveRequested(removeVocabulary);
+onSavedArticleRemoveRequested(removeSavedArticle);
 onVocabularyKnownRequested(markVocabularyKnown);
 onKnownWordRestoreRequested(restoreKnownWord);
 onReviewStart(startReview);

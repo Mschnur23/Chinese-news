@@ -148,6 +148,26 @@
     "translationEn": "More and more companies are beginning to focus on whether the technology can genuinely improve production processes and create sustainable commercial value.",
     "explanationEn": "能否 introduces an indirect yes-or-no question: whether something can happen. 并 links the improvement of operations to the further result of creating value."
   },
+  "relatedReading": [
+    {
+      "titleEn": "The rapid embrace of AI in China may shape how it is used globally",
+      "publication": "Associated Press",
+      "url": "https://apnews.com/article/0126a120113a92fa450ecb2e464b35bc",
+      "descriptionEn": "A wider look at how Chinese businesses and public institutions are putting artificial intelligence into practice."
+    },
+    {
+      "titleEn": "Nvidia's AI chip sales in China stall as local chipmakers take the lead",
+      "publication": "Associated Press",
+      "url": "https://apnews.com/article/1ae6228c4928ddbb43f984e9b38f49dd",
+      "descriptionEn": "Reporting on the domestic technology supply chain behind China's expanding AI industry."
+    },
+    {
+      "titleEn": "Chinese tech startup DeepSeek says it was hit with large-scale malicious attacks",
+      "publication": "Associated Press",
+      "url": "https://apnews.com/article/be414acadbf35070d7645fe9fbd8f464",
+      "descriptionEn": "Coverage of a Chinese AI company whose rise reflects the sector's rapid commercialization."
+    }
+  ],
   "wordHelp": [
     { "termZh": "人工", "pinyin": "réngōng", "meaningEn": "artificial; human-made" },
     { "termZh": "智能", "pinyin": "zhìnéng", "meaningEn": "intelligence; intelligent capability" },

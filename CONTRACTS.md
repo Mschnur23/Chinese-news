@@ -130,6 +130,22 @@ Known words are excluded from later analysis requests. Marking a term known remo
 
 The selected term and context must both match the submitted article before and after model interpretation.
 
+### Related English article
+
+```js
+{ titleEn: "string", publication: "string", url: "https URL", descriptionEn: "string" }
+```
+
+Related reading contains exactly three unique English-language links from the configured reputable-domain allowlist. Every URL must be present in the Responses API web-search citations. Links may require a publisher subscription; the application does not fetch or reproduce the linked article body.
+
+### Saved article
+
+```js
+{ id: "canonical https URL", canonicalUrl: "canonical https URL", titleZh: "string", sourceName: "string", savedAt: "ISO-8601 string" }
+```
+
+Saved-article identity is its normalized canonical URL. The browser store contains only the link and display metadata above—never article text.
+
 ### Response envelope
 
 Every server route returns one of:
@@ -151,6 +167,7 @@ Keys are always present. Public errors contain no stack traces, provider output,
 | `/api/explain` | `POST` | Phase 2 | Explain a bounded sentence verified against an article. |
 | `/api/word` | `POST` | Learning loop | Explain one tapped article word in its verified sentence context. |
 | `/api/import` | `POST` | Phase 4 | Validate pasted text or extract one public HTTPS article and return an imported article. |
+| `/api/related` | `POST` | Phase 5 | Search for and return three verified reputable English links on the article topic. |
 
 ## DO NOT CHANGE WITHOUT ASKING
 
@@ -187,6 +204,8 @@ The normal site URL uses live data. Adding `?preview=1` switches that browser se
 - `source.markKnown(termZh)` and `source.unmarkKnown(termZh)` update the known-word store.
 - `source.lookupWord({ article, termZh, contextSentenceZh, learnerLevel })` → `ContextualWordHelp`.
 - `source.importArticle(input)` → one normalized imported `ArticleDetail`; pasted text and link extraction both enter through this method.
+- `source.related(article)` → `{ items: RelatedArticle[] }` containing exactly three verified links.
+- `source.saveArticle(article)`, `source.listArticles()`, and `source.removeArticle(id)` are the saved-article persistence boundary.
 
 All browser network and persistence operations enter through `source.js`.
 
@@ -203,6 +222,7 @@ Allowed values are `Intermediate` and `Advanced`.
 - Stored value in Phase 3: `{ version: 1, records: VocabularyRecord[] }`.
 - Known-word key: `daily-chinese-read:v1:known-words`; stored value: `{ version: 1, words: KnownWord[] }`.
 - Unknown versions or malformed values produce a recoverable storage error and are never silently overwritten.
+- Saved-article key: `daily-chinese-read:v1:articles`; stored value: `{ version: 1, records: SavedArticle[] }`.
 
 ### Source identifiers
 
@@ -247,3 +267,11 @@ This replaces the Phase 0 `yicai` identifier and migrates the source set from tw
 - `onImportRequested(handler)`, `onImportBack(handler)`, `onImportModeChanged(handler)`, `onImportSubmitted(handler)`, `onImportedArticleOpen(handler)`, `showImportView()`, `hideImportView(restoreHome)`, `setImportMode(mode)`, `getImportInput()`, `setImportBusy(isBusy)`, `showImportError(message)`, `clearImportPreview()`, `renderImportPreview(article)`, and `setLearnerLevel(value)` are additive `ui.js` exports.
 - Phase 4 adds DOM IDs `open-import`, `import-view`, `import-back`, `import-tab-url`, `import-tab-text`, `import-form`, `import-url-panel`, `import-url`, `import-text-panel`, `import-title-input`, `import-source-input`, `import-original-url`, `import-text`, `import-level`, `import-submit`, `import-status`, `import-error`, `import-preview`, `import-preview-content`, and `open-imported-article`.
 - Opening an imported article passes the normalized object into the existing reader, analysis, highlighting, contextual word-help, sentence-help, and vocabulary workflows without a second article fetch.
+
+### Phase 5 related reading and saved-article details
+
+- `POST /api/related` accepts `{ article: ArticleDetail }`, validates and bounds the article, and uses the server-side `OPENAI_API_KEY` with the Responses API web-search tool.
+- Existing language work uses `OPENAI_MODEL` (default `gpt-5-mini`). Related web search uses `OPENAI_SEARCH_MODEL` (default `gpt-5.5`) and a server-side reputable-publication allowlist.
+- Returned links must be HTTPS, unique, allowlisted, and present in provider search citations. Subscriber-only destinations are allowed, but the app never bypasses access or fetches their article bodies.
+- `onArticleSaveRequested(handler)`, `setArticleSaveBusy(isBusy)`, `showArticleSaveResult(isSaved, message)`, `markArticleSaved(records)`, `clearRelatedReading()`, `setRelatedReadingBusy(isBusy)`, `renderRelatedReading(items)`, `showRelatedReadingError(message)`, `onRelatedReadingRetry(handler)`, `renderSavedArticles(records)`, `showSavedArticlesEmpty(message)`, `showSavedArticlesError(message)`, `setSavedArticleRemoveBusy(id, isBusy)`, and `onSavedArticleRemoveRequested(handler)` are additive `ui.js` exports.
+- Phase 5 adds DOM IDs `reader-save`, `save-article`, `article-save-status`, `related-reading`, `related-reading-title`, `related-reading-status`, `related-reading-error`, `related-reading-list`, `related-reading-retry`, `saved-articles`, `saved-articles-title`, `saved-articles-status`, `saved-articles-notice`, and `saved-articles-list`.

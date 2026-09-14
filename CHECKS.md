@@ -54,3 +54,10 @@ Run this list after every phase. Record failures; never remove a previously pass
 50. A missing or unavailable `FIRECRAWL_API_KEY` disables only Link import; Paste text remains usable. *(Phase 4)*
 51. Imported article bodies are not written to browser storage, logs, analytics, or response errors; saved vocabulary retains only its existing bounded fields. *(Phase 4)*
 52. Missing imported metadata creates no empty links and no fabricated author, publication-description, date, or source-link placeholder copy. *(Phase 4)*
+53. Opening an article automatically requests exactly three closely related English links without delaying or replacing the Chinese article. *(Phase 5)*
+54. Every related link is HTTPS, unique, on the reputable-domain allowlist, and present in the Responses API web-search citations. *(Phase 5)*
+55. Subscriber-only related links may be shown, but the application neither fetches nor reproduces the English article body. *(Phase 5)*
+56. A related-reading failure leaves the Chinese article and language tools intact and exposes a readable retry action. *(Phase 5)*
+57. Saving an article stores only its canonical URL, title, publication name, and save time; article text is never persisted. *(Phase 5)*
+58. Saved articles survive refresh, do not duplicate by canonical URL, open at the publisher, and can be removed independently of saved words. *(Phase 5)*
+59. Malformed or unknown-version saved-article data produces a recoverable error without overwriting existing browser data. *(Phase 5)*

@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=phase4-import-1";
+import { config } from "./config.js?v=phase5-library-1";
 
 let sampleCache;
 
@@ -12,6 +12,10 @@ async function readSamples() {
 
 function storageError() {
   return new Error("Saved vocabulary could not be read or updated. Your existing browser data was left unchanged.");
+}
+
+function articleStorageError() {
+  return new Error("Saved articles could not be read or updated. Your existing browser data was left unchanged.");
 }
 
 function requiredText(value) {
@@ -134,6 +138,50 @@ function writeVocabularyStore(records) {
   }
 }
 
+function normalizeSavedArticle(value, options = {}) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw articleStorageError();
+  let canonicalUrl;
+  try {
+    canonicalUrl = new URL(value.canonicalUrl);
+    if (canonicalUrl.protocol !== "https:" || canonicalUrl.username || canonicalUrl.password) throw new Error();
+    canonicalUrl.hash = "";
+  } catch {
+    throw articleStorageError();
+  }
+  const savedAt = options.forSave ? new Date().toISOString() : validDate(value.savedAt);
+  const record = {
+    id: canonicalUrl.toString(),
+    canonicalUrl: canonicalUrl.toString(),
+    titleZh: requiredText(value.titleZh),
+    sourceName: requiredText(value.sourceName),
+    savedAt,
+  };
+  if (!options.forSave && value.id !== record.id) throw articleStorageError();
+  return record;
+}
+
+function readSavedArticlesStore() {
+  try {
+    const raw = localStorage.getItem(config.savedArticlesStorageKey);
+    if (raw === null) return [];
+    const value = JSON.parse(raw);
+    if (!value || value.version !== config.savedArticlesStorageVersion || !Array.isArray(value.records)) throw articleStorageError();
+    const records = value.records.map((record) => normalizeSavedArticle(record));
+    if (new Set(records.map((record) => record.id)).size !== records.length) throw articleStorageError();
+    return records;
+  } catch {
+    throw articleStorageError();
+  }
+}
+
+function writeSavedArticlesStore(records) {
+  try {
+    localStorage.setItem(config.savedArticlesStorageKey, JSON.stringify({ version: config.savedArticlesStorageVersion, records }));
+  } catch {
+    throw articleStorageError();
+  }
+}
+
 async function requestJson(url, options = {}) {
   if (window.location.protocol === "file:") {
     throw new Error("Open this reader through its local or deployed web address to use live articles.");
@@ -213,6 +261,20 @@ function normalizeSampleImport(input) {
 }
 
 export const source = Object.freeze({
+  async related(article) {
+    if (config.mode === "sample") {
+      await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
+      const samples = await readSamples();
+      return { items: samples.relatedReading || [] };
+    }
+    const payload = await requestJson(config.apiRoutes.related, {
+      method: "POST",
+      timeoutMs: config.relatedReadingRequestTimeoutMs,
+      body: { article },
+    });
+    return payload.data;
+  },
+
   async importArticle(input) {
     if (config.mode === "sample") {
       await new Promise((resolve) => window.setTimeout(resolve, config.sampleDelayMs));
@@ -321,6 +383,29 @@ export const source = Object.freeze({
     const nextRecords = [candidate, ...records];
     writeVocabularyStore(nextRecords);
     return { added: true, record: candidate, records: nextRecords };
+  },
+
+  async saveArticle(article) {
+    const candidate = normalizeSavedArticle(article, { forSave: true });
+    const records = readSavedArticlesStore();
+    const existing = records.find((item) => item.id === candidate.id);
+    if (existing) return { added: false, record: existing, records };
+    const nextRecords = [candidate, ...records];
+    writeSavedArticlesStore(nextRecords);
+    return { added: true, record: candidate, records: nextRecords };
+  },
+
+  async listArticles() {
+    return readSavedArticlesStore();
+  },
+
+  async removeArticle(id) {
+    const recordId = requiredText(id);
+    const records = readSavedArticlesStore();
+    const nextRecords = records.filter((record) => record.id !== recordId);
+    if (nextRecords.length === records.length) return { removed: false, records };
+    writeSavedArticlesStore(nextRecords);
+    return { removed: true, records: nextRecords };
   },
 
   async list() {

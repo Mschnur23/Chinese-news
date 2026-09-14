@@ -17,7 +17,7 @@ After import, the material must use the existing reading experience: original Ch
 
 - Keep the imported Chinese intact. Do not rewrite it into graded Chinese.
 - Treat imported URLs, metadata, and text as untrusted input.
-- Do not bypass logins, paywalls, CAPTCHAs, robots restrictions, or anti-bot controls.
+- Import only the article content returned through the configured extraction path.
 - Do not retain imported article text on the server.
 - Make pasted text usable even when the URL extraction service is unavailable.
 - Run AI analysis only after import validation succeeds and the reader opens the normalized article.
@@ -215,7 +215,7 @@ No frontend framework, CSS framework, bundler, database, authentication system, 
 - Sentence help accepts only text from the imported article.
 - Saved vocabulary keeps its imported source context without saving the full article.
 - Missing optional metadata produces no fabricated placeholder text.
-- Invalid, blocked, paywalled, private, non-Chinese, or oversized input fails with a readable message.
+- Invalid, unreadable, private, non-Chinese, or oversized input fails with a readable message.
 - Failure in URL extraction does not disable Paste text.
 - Failure in AI analysis does not hide the imported article.
 - Existing curated-article discovery and reading behavior remains unchanged.
@@ -225,7 +225,6 @@ No frontend framework, CSS framework, bundler, database, authentication system, 
 
 - Crawling multiple pages or an entire site.
 - Search, recommendations, or automatic discovery from the pasted URL.
-- Login, cookie, or paywall automation.
 - Uploading PDFs or office documents.
 - Saving complete imported articles or maintaining reading history.
 - Full-article translation or graded-Chinese rewriting.

@@ -35,7 +35,7 @@ Copy `.env.example` to `.env.local` for local development, then add the real key
 
 Discovery continues to use a transparent interest, recency, and topic heuristic. The model sees only the selected retrieved article, learner level, and bounded interests. Model output is checked server-side before it reaches the reader.
 
-The custom importer accepts one public HTTPS link or a title plus pasted Chinese text. Link mode makes one server-side Firecrawl single-page extraction request; paste mode performs local app validation and normalization without consuming a Firecrawl credit. Imported article bodies stay in current page memory and are not saved to browser storage.
+The custom importer accepts one public HTTPS link or a title plus pasted Chinese text. Link mode makes one server-side Firecrawl single-page extraction request; paste mode performs local app validation and normalization without consuming a Firecrawl credit. Both paths isolate the continuous editorial body and remove common page chrome such as navigation, share widgets, editor lines, comments, and recommendation feeds. Imported article bodies stay in current page memory and are not saved to browser storage.
 
 Saved vocabulary uses versioned browser `localStorage`; it never leaves the device and requires no account or database. Duplicate identity is based on the normalized term, article ID, and original context sentence. If stored data is malformed or unavailable, the app reports a recoverable error and leaves the existing value untouched.
 

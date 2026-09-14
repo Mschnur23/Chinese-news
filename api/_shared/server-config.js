@@ -4,6 +4,8 @@ export const serverConfig = Object.freeze({
   maximumResponseBytes: 1800000,
   maximumArticleCharacters: 30000,
   minimumArticleCharacters: 180,
+  minimumExtractedArticleCharacters: 80,
+  minimumExtractedHanCharacters: 45,
   maximumSentenceCharacters: 500,
   maximumModelRequestBytes: 90000,
   modelRequestTimeoutMs: 40000,

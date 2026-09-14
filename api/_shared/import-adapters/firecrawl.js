@@ -36,7 +36,7 @@ export async function importWithFirecrawl(canonicalUrl) {
         url: canonicalUrl,
         formats: ["markdown"],
         onlyMainContent: true,
-        onlyCleanContent: false,
+        onlyCleanContent: true,
         removeBase64Images: true,
         blockAds: true,
         proxy: "basic",

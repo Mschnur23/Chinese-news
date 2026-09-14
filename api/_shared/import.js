@@ -125,16 +125,109 @@ export function paragraphsFromText(value, { markdown = false } = {}) {
     .slice(0, 300);
 }
 
-function validateArticleText(paragraphs) {
+const terminalBoilerplatePatterns = Object.freeze([
+  /^【?编辑[：:]/,
+  /^更多精彩内容/,
+  /^相关新闻/,
+  /^相关推荐/,
+  /^相关阅读/,
+  /^国内新闻精选/,
+  /^发表评论/,
+  /^评论\s*文明上网/,
+  /^登录$/,
+  /^加载中/,
+]);
+
+const lineBoilerplatePatterns = Object.freeze([
+  /^首页\s*[→>]/,
+  /^分享到/,
+  /^微信里点/,
+  /^二维码/,
+  /^[大小]字体$/,
+  /^责任编辑[：:]/,
+  /^来源[：:]/,
+  /^专题[：:]/,
+  /^上一篇|^下一篇/,
+  /^返回顶部$/,
+  /^Copyright\b/i,
+]);
+
+function sameEditorialTitle(paragraph, titleZh) {
+  const titleKey = (value) => cleanText(value)
+    .replace(/\s+/g, "")
+    .replace(/[-_｜|](?:中新网|中国新闻网|新华网|人民网|央视网)$/, "");
+  const normalizedParagraph = titleKey(paragraph);
+  const normalizedTitle = titleKey(titleZh);
+  return normalizedTitle.length >= 6 && (
+    normalizedParagraph === normalizedTitle
+  );
+}
+
+function isNavigationCluster(paragraph) {
+  const pipeCount = (paragraph.match(/[|｜]/g) || []).length;
+  const hanCount = (paragraph.match(/\p{Script=Han}/gu) || []).length;
+  const sentenceMarks = (paragraph.match(/[。！？!?；]/g) || []).length;
+  return pipeCount >= 3 || (hanCount >= 18 && sentenceMarks === 0 && /\s/.test(paragraph) && paragraph.split(/\s+/).length >= 7);
+}
+
+function isArticleLike(paragraph) {
+  const hanCount = (paragraph.match(/\p{Script=Han}/gu) || []).length;
+  return hanCount >= 12 && (/[。！？!?；]/.test(paragraph) || paragraph.length >= 42);
+}
+
+/**
+ * Narrows a full-page extraction to the continuous editorial article.
+ * Navigation, share widgets, comments, and recommendation feeds are excluded;
+ * short headings inside an established article remain available.
+ */
+export function extractEditorialParagraphs(value, { markdown = false, titleZh = "" } = {}) {
+  let paragraphs = paragraphsFromText(value, { markdown });
+  if (!paragraphs.length) return [];
+
+  const titleIndexes = paragraphs
+    .map((paragraph, index) => sameEditorialTitle(paragraph, titleZh) ? index : -1)
+    .filter((index) => index >= 0);
+  if (titleIndexes.length) paragraphs = paragraphs.slice(titleIndexes.at(-1) + 1);
+
+  const cleaned = [];
+  let articleStarted = false;
+  for (const paragraph of paragraphs) {
+    const line = cleanText(paragraph).replace(/\s+/g, " ").trim();
+    if (!line || sameEditorialTitle(line, titleZh)) continue;
+    if (articleStarted && terminalBoilerplatePatterns.some((pattern) => pattern.test(line))) break;
+    if (
+      lineBoilerplatePatterns.some((pattern) => pattern.test(line))
+      || isNavigationCluster(line)
+      || /^\d{4}[年/-]\d{1,2}/.test(line) && /来源|作者|责任编辑/.test(line)
+      || /^\(?完\)?$/.test(line)
+    ) continue;
+
+    if (!articleStarted) {
+      if (!isArticleLike(line)) continue;
+      articleStarted = true;
+    }
+
+    if (isArticleLike(line) || (line.length >= 4 && line.length <= 36 && !/[|｜]/.test(line))) {
+      cleaned.push(line.replace(/[（(]完[）)]\s*$/, "").trim());
+    }
+  }
+
+  const cleanedTextLength = cleaned.join("\n\n").length;
+  return cleanedTextLength >= serverConfig.minimumExtractedArticleCharacters ? cleaned : paragraphs;
+}
+
+function validateArticleText(paragraphs, minimums = {}) {
   const bodyText = paragraphs.join("\n\n");
-  if (bodyText.length < serverConfig.minimumArticleCharacters) {
+  const minimumCharacters = minimums.characters || serverConfig.minimumArticleCharacters;
+  const minimumHanCharacters = minimums.han || serverConfig.minimumImportHanCharacters;
+  if (bodyText.length < minimumCharacters) {
     throw new PublicError("IMPORT_TEXT_TOO_SHORT", "Add more of the Chinese article before importing it.", 422);
   }
   if (bodyText.length > serverConfig.maximumArticleCharacters) {
     throw new PublicError("IMPORT_TEXT_TOO_LONG", "Shorten the article to 30,000 characters or fewer.", 413);
   }
   const hanCount = (bodyText.match(/\p{Script=Han}/gu) || []).length;
-  if (hanCount < serverConfig.minimumImportHanCharacters) {
+  if (hanCount < minimumHanCharacters) {
     throw new PublicError("IMPORT_NOT_CHINESE", "The import needs more Chinese article text.", 422);
   }
   return bodyText;
@@ -154,8 +247,8 @@ function optionalDate(value) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
-function importedArticle({ originType, titleZh, sourceName, canonicalUrl, sourceDescription = "", imageUrl = "", publishedAt = null, author = "", paragraphs }) {
-  const bodyText = validateArticleText(paragraphs);
+function importedArticle({ originType, titleZh, sourceName, canonicalUrl, sourceDescription = "", imageUrl = "", publishedAt = null, author = "", paragraphs, minimums }) {
+  const bodyText = validateArticleText(paragraphs, minimums);
   const homepage = canonicalUrl ? new URL(canonicalUrl).origin + "/" : "";
   return {
     id: stableId(titleZh, canonicalUrl, bodyText),
@@ -184,7 +277,10 @@ export function normalizePastedArticle(input) {
     titleZh,
     sourceName,
     canonicalUrl,
-    paragraphs: paragraphsFromText(requiredString(input.text, "Article text", serverConfig.maximumArticleCharacters)),
+    paragraphs: extractEditorialParagraphs(
+      requiredString(input.text, "Article text", serverConfig.maximumArticleCharacters),
+      { titleZh },
+    ),
   });
 }
 
@@ -193,13 +289,10 @@ export function normalizeExtractedArticle(canonicalUrl, data) {
     throw new PublicError("IMPORT_EXTRACTION_UNAVAILABLE", "The article could not be extracted. Paste its text instead.", 502);
   }
   const metadata = data.metadata && typeof data.metadata === "object" ? data.metadata : {};
-  let paragraphs = paragraphsFromText(data.markdown, { markdown: true });
   const firstHeading = typeof data.markdown === "string" ? data.markdown.match(/^#\s+(.+)$/m)?.[1] : "";
   const titleZh = optionalString(metadata.title || firstHeading, serverConfig.maximumImportTitleCharacters);
   if (!titleZh) throw new PublicError("IMPORT_ARTICLE_UNREADABLE", "No article title was found. Paste the text instead.", 422);
-  if (paragraphs[0]?.replace(/\s+/g, " ").trim() === titleZh.replace(/\s+/g, " ").trim()) {
-    paragraphs = paragraphs.slice(1);
-  }
+  const paragraphs = extractEditorialParagraphs(data.markdown, { markdown: true, titleZh });
   const sourceUrl = validateImportUrl(metadata.sourceURL || metadata.url || canonicalUrl);
   return importedArticle({
     originType: "url",
@@ -212,5 +305,9 @@ export function normalizeExtractedArticle(canonicalUrl, data) {
     publishedAt: optionalDate(metadata.publishedTime || metadata.articlePublishedTime || metadata.datePublished),
     author: optionalString(metadata.author, 160),
     paragraphs,
+    minimums: {
+      characters: serverConfig.minimumExtractedArticleCharacters,
+      han: serverConfig.minimumExtractedHanCharacters,
+    },
   });
 }

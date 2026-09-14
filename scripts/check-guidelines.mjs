@@ -258,6 +258,34 @@ const wordHelp = language.validateWordHelpOutput({ termZh: "企业", pinyin: "q�
 check(wordHelp.termZh === "企业" && wordHelp.pinyin === "qǐyè", "Grounded contextual word help must pass validation");
 
 const importHelpers = await import(new URL("../api/_shared/import.js", import.meta.url));
+const clutteredNewsPage = `中国新闻网
+
+即时 时政 财经 同心 东西问 国际 社会 理论·评论 中国侨网 大湾区 文娱 体育 教育 法治 健康 生活
+
+# 习近平结束出席金砖国家领导人第十八次会晤回到北京
+
+首页 → 国内新闻
+
+分享到: 微信扫一扫:分享
+
+2026年09月13日 22:04 来源: 中国新闻网
+
+中新社 北京9月13日电 9月13日晚,中国国家主席习近平圆满结束出席金砖国家领导人第十八次会晤回到北京。
+
+中共中央政治局常委、中央办公厅主任蔡奇,中共中央政治局委员、外交部部长王毅等陪同人员同机返回。(完)
+
+【编辑:万纪玮】
+
+国内新闻精选:
+
+台湾书法家:以身为中国人倍感自豪 两岸文化纽带绝不能断`;
+const editorialParagraphs = importHelpers.extractEditorialParagraphs(clutteredNewsPage, {
+  markdown: true,
+  titleZh: "习近平结束出席金砖国家领导人第十八次会晤回到北京-中新网",
+});
+check(editorialParagraphs.length === 2, "Imported full pages must isolate the continuous article body");
+check(!editorialParagraphs.join(" ").includes("即时 时政") && !editorialParagraphs.join(" ").includes("国内新闻精选"), "Imported article text must exclude navigation and recommendation feeds");
+check(editorialParagraphs.at(-1).endsWith("同机返回。"), "Imported article cleanup must remove publisher end marks without damaging the sentence");
 const importedFromText = importHelpers.normalizePastedArticle({
   titleZh: "人工智能产业观察",
   sourceName: "测试来源",

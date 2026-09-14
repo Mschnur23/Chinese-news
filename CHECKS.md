@@ -61,3 +61,5 @@ Run this list after every phase. Record failures; never remove a previously pass
 57. Saving an article stores only its canonical URL, title, publication name, and save time; article text is never persisted. *(Phase 5)*
 58. Saved articles survive refresh, do not duplicate by canonical URL, open at the publisher, and can be removed independently of saved words. *(Phase 5)*
 59. Malformed or unknown-version saved-article data produces a recoverable error without overwriting existing browser data. *(Phase 5)*
+60. Full-page imports isolate the continuous editorial body and exclude navigation, sharing controls, comment prompts, editor lines, and recommendation feeds. *(Import quality)*
+61. The reader visually labels and separates the article text from language tools, publication context, the article brief, and related reading. *(Import quality)*

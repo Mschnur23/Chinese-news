@@ -470,6 +470,9 @@ export function renderArticle(article) {
     appendTappableText(paragraph, text, text);
     body.append(paragraph);
   });
+  const articleText = createElement("section", "reader__article-text");
+  articleText.setAttribute("aria-label", "Article text");
+  articleText.append(createElement("p", "eyebrow reader__article-label", "Article"), body);
 
   const publication = createElement("aside", "publication-note");
   publication.setAttribute("aria-label", `About ${article.sourceName || "this publication"}`);
@@ -491,9 +494,9 @@ export function renderArticle(article) {
   elements.readerContent.replaceChildren(...[
     header,
     image,
-    elements.languageTools,
-    body,
+    articleText,
     publication,
+    elements.languageTools,
     elements.analysisGistPanel,
   ].filter(Boolean));
   currentReaderBody = body;

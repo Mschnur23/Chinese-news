@@ -6,6 +6,7 @@ import { sendJson } from "../api/_shared/http.js";
 import { enforcePaidRequestLimit, resetPaidRequestLimitsForTests } from "../api/_shared/rate-limit.js";
 import { serverConfig } from "../api/_shared/server-config.js";
 import { requestRelatedReading, requestStructuredModel } from "../api/_shared/model.js";
+import { emptyDriveSyncMeta, mergeDriveSyncDocuments } from "../sync-data.js";
 
 test("short extraction never restores unfiltered page furniture", () => {
   const result = extractEditorialParagraphs(`首页 登录 下载客户端\n\n这是一则很短的中文新闻正文。\n\n相关阅读 广告合作`, {
@@ -67,5 +68,93 @@ test("structured output and web search share the same Responses API transport", 
     globalThis.fetch = originalFetch;
     if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
     else process.env.OPENAI_API_KEY = originalKey;
+  }
+});
+
+test("Drive sync merges newer review state and honors newer deletions", () => {
+  const localMeta = emptyDriveSyncMeta("2026-09-20T10:00:00.000Z");
+  const remoteMeta = emptyDriveSyncMeta("2026-09-20T09:00:00.000Z");
+  remoteMeta.tombstones.articles["https://example.test/story"] = "2026-09-20T11:00:00.000Z";
+  const baseVocabulary = {
+    id: "word:article:sentence",
+    termZh: "产业",
+    savedAt: "2026-09-19T08:00:00.000Z",
+    lastReviewedAt: null,
+  };
+  const merged = mergeDriveSyncDocuments(
+    {
+      version: 1,
+      updatedAt: localMeta.updatedAt,
+      vocabulary: [baseVocabulary],
+      knownWords: [],
+      articles: [{ id: "https://example.test/story", savedAt: "2026-09-20T08:00:00.000Z" }],
+      meta: localMeta,
+    },
+    {
+      version: 1,
+      updatedAt: remoteMeta.updatedAt,
+      vocabulary: [{ ...baseVocabulary, reviewStage: 2, lastReviewedAt: "2026-09-20T10:30:00.000Z" }],
+      knownWords: [{ termZh: "应用", normalized: "应用", knownAt: "2026-09-20T09:30:00.000Z" }],
+      articles: [],
+      meta: remoteMeta,
+    },
+  );
+  assert.equal(merged.vocabulary[0].reviewStage, 2);
+  assert.equal(merged.knownWords.length, 1);
+  assert.equal(merged.articles.length, 0);
+});
+
+test("Drive connection creates one app-data file and stores no token", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
+  const originalLocation = globalThis.location;
+  const originalStorage = globalThis.localStorage;
+  const originalGoogle = globalThis.google;
+  const memory = new Map();
+  const requests = [];
+  globalThis.location = { search: "" };
+  globalThis.window = { location: { protocol: "http:" }, setTimeout, clearTimeout };
+  globalThis.localStorage = {
+    getItem(key) { return memory.has(key) ? memory.get(key) : null; },
+    setItem(key, value) { memory.set(key, String(value)); },
+    removeItem(key) { memory.delete(key); },
+  };
+  globalThis.google = {
+    accounts: {
+      oauth2: {
+        initTokenClient(options) {
+          return { requestAccessToken() { options.callback({ access_token: "temporary-test-token" }); } };
+        },
+      },
+    },
+  };
+  globalThis.fetch = async (url, options = {}) => {
+    requests.push({ url: String(url), authorization: options.headers?.Authorization || "", method: options.method || "GET" });
+    const payload = String(url).includes("/api/client-config")
+      ? { ok: true, data: { googleDriveConfigured: true, googleClientId: "public-client-id" }, warnings: [] }
+      : String(url).includes("uploadType=multipart")
+        ? { id: "drive-file-1", modifiedTime: "2026-09-20T12:00:00.000Z" }
+        : { files: [] };
+    return {
+      ok: true,
+      status: 200,
+      headers: { get() { return null; } },
+      async text() { return JSON.stringify(payload); },
+      async json() { return payload; },
+    };
+  };
+  try {
+    const { source: driveSource } = await import(`../source.js?drive-test=${Date.now()}`);
+    const result = await driveSource.connectDrive();
+    assert.equal(result.vocabularyCount, 0);
+    assert.equal(requests.filter((request) => request.url.includes("uploadType=multipart")).length, 1);
+    assert.equal(requests.some((request) => request.authorization === "Bearer temporary-test-token"), true);
+    assert.equal([...memory.values()].some((value) => value.includes("temporary-test-token")), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    globalThis.window = originalWindow;
+    globalThis.location = originalLocation;
+    globalThis.localStorage = originalStorage;
+    globalThis.google = originalGoogle;
   }
 });

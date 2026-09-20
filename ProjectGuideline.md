@@ -33,7 +33,7 @@ Open app
 
 ## 4. Intended user and default profile
 
-- One user; no account or sign-in.
+- Individual learners; Google authorization is optional and used only to synchronize each person's saved library.
 - Intermediate-to-advanced Mandarin learner, with an approximate level selected in the interface.
 - Standing interests are a short, editable list such as AI, China technology, business/economics, policy, startups, and U.S.–China relations.
 - The user wants native material preserved, not rewritten into graded Chinese.
@@ -184,7 +184,7 @@ Make the reading session persistent by letting the user keep useful terms withou
 
 Do not build these in the three-phase MVP:
 
-- authentication, accounts, multi-user behavior, or cloud database persistence;
+- a proprietary account system, shared social library, or cloud database persistence; the approved Google Drive sync uses each user's own private app-data folder;
 - spaced repetition, flashcard scheduling, quizzes, mastery scores, or adaptive learner modeling;
 - comparison with U.S. media or claims that coverage was “overlooked”;
 - more than the three approved active article sources;
@@ -207,3 +207,7 @@ Do not build these in the three-phase MVP:
 ## 9. Definition of done
 
 The MVP is done only when all three phases meet their acceptance criteria, the full regression checklist passes, secrets are absent from tracked files and browser responses, and the deployed Vercel URL completes the happy path using live public article data.
+
+## 10. Approved additive phase — Google Drive sync
+
+Google Drive sync is an approved post-MVP migration. Browser storage remains the offline-first copy. After an explicit Connect action, the app may request only the non-sensitive `drive.appdata` scope and synchronize one hidden app-specific JSON file containing vocabulary, review state, known words, saved-article links, and deletion tombstones. It must not request general Drive access, store Google access tokens, or upload article bodies.

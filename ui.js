@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=phase5-library-1";
+import { config } from "./config.js?v=drive-sync-1";
 
 const elements = {
   body: document.body,
@@ -94,6 +94,11 @@ const elements = {
   savedArticlesStatus: document.querySelector("#saved-articles-status"),
   savedArticlesNotice: document.querySelector("#saved-articles-notice"),
   savedArticlesList: document.querySelector("#saved-articles-list"),
+  driveSync: document.querySelector("#drive-sync"),
+  driveSyncStatus: document.querySelector("#drive-sync-status"),
+  driveConnect: document.querySelector("#drive-connect"),
+  driveSyncNow: document.querySelector("#drive-sync-now"),
+  driveDisconnect: document.querySelector("#drive-disconnect"),
 };
 
 let lastArticleTrigger = null;
@@ -104,6 +109,7 @@ let selectedSentence = "";
 let vocabularyReturnView = "list";
 let activeWordAnchor = null;
 let importMode = "url";
+let googleIdentityScriptPromise;
 const chineseWordSegmenter = typeof Intl.Segmenter === "function"
   ? new Intl.Segmenter("zh", { granularity: "word" })
   : null;
@@ -111,6 +117,51 @@ const chineseWordSegmenter = typeof Intl.Segmenter === "function"
 // Keep the contextual definition outside the reading-tools layout so it can
 // remain attached to the tapped word regardless of where that word appears.
 document.body.append(elements.wordHelp);
+
+export function loadGoogleIdentityScript() {
+  if (globalThis.google?.accounts?.oauth2) return Promise.resolve();
+  if (googleIdentityScriptPromise) return googleIdentityScriptPromise;
+  googleIdentityScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = config.googleIdentityScriptUrl;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener("load", resolve, { once: true });
+    script.addEventListener("error", () => {
+      googleIdentityScriptPromise = null;
+      reject(new Error("Google authorization could not be loaded. Check your connection and try again."));
+    }, { once: true });
+    document.head.append(script);
+  });
+  return googleIdentityScriptPromise;
+}
+
+export function setDriveSyncState({ configured = true, connected = false, busy = false, message = "", error = false } = {}) {
+  elements.driveSync.hidden = !config.featureFlags.driveSync;
+  elements.driveConnect.hidden = !configured || connected;
+  elements.driveSyncNow.hidden = !connected;
+  elements.driveDisconnect.hidden = !connected;
+  elements.driveConnect.disabled = busy;
+  elements.driveSyncNow.disabled = busy;
+  elements.driveDisconnect.disabled = busy;
+  elements.driveConnect.textContent = busy && !connected ? "Connecting…" : "Connect Google Drive";
+  elements.driveSyncNow.textContent = busy && connected ? "Syncing…" : "Sync now";
+  elements.driveSyncStatus.textContent = message || (configured ? "Browser only. Connect Drive to sync this library." : "Drive sync is not configured yet.");
+  elements.driveSyncStatus.classList.toggle("drive-sync__status--error", error);
+  elements.driveSync.setAttribute("aria-busy", String(busy));
+}
+
+export function onDriveConnectRequested(handler) {
+  elements.driveConnect.addEventListener("click", handler);
+}
+
+export function onDriveSyncRequested(handler) {
+  elements.driveSyncNow.addEventListener("click", handler);
+}
+
+export function onDriveDisconnectRequested(handler) {
+  elements.driveDisconnect.addEventListener("click", handler);
+}
 
 function createElement(tagName, className, text) {
   const element = document.createElement(tagName);

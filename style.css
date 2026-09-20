@@ -887,6 +887,24 @@ body[data-busy="true"] .article-grid { opacity: 0.45; }
 }
 
 .vocabulary__header > p { margin-bottom: 0; color: var(--ink-soft); line-height: 1.6; }
+
+.drive-sync {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.drive-sync[hidden] { display: none; }
+.drive-sync h3 { margin: 0.15rem 0 0.3rem; font-family: var(--display); font-size: 1.45rem; }
+.drive-sync__status { max-width: 42rem; margin: 0; color: var(--text-secondary); line-height: 1.5; }
+.drive-sync__status--error { color: var(--error); }
+.drive-sync__actions { display: flex; gap: 0.65rem; align-items: center; flex: 0 0 auto; }
+.drive-sync__actions button { white-space: nowrap; }
 .vocabulary-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 1px solid var(--line); }
 
 .vocabulary-card {
@@ -1253,7 +1271,8 @@ footer { max-width: 850px; border-color: var(--border); }
   .term-card__actions { grid-template-columns: 1fr 1fr; padding-left: 0.5rem; }
   .term-card__actions .term-card__save { justify-self: stretch; margin: 0; }
   .word-help { width: min(20rem, calc(100vw - 1.5rem)); }
-  .review-summary, .known-words { align-items: stretch; flex-direction: column; }
+  .review-summary, .known-words, .drive-sync { align-items: stretch; flex-direction: column; }
+  .drive-sync__actions { align-items: stretch; flex-direction: column; }
   .saved-article-card { align-items: flex-start; }
   .review-ratings { grid-template-columns: 1fr; }
   #known-words-list { justify-content: flex-start; }

@@ -1,11 +1,11 @@
 # Daily Chinese Read
 
-A focused reading workspace for intermediate-to-advanced Mandarin learners. The current checkpoint is **Phase 5 — related reading and saved articles** with live Chinese reporting, custom imports, grounded learning tools, reputable English follow-up links, and a browser-local reading list.
+A focused reading workspace for intermediate-to-advanced Mandarin learners. The current checkpoint includes the approved **Google Drive sync** phase alongside live Chinese reporting, custom imports, grounded learning tools, reputable English follow-up links, and an offline-first reading list.
 
 Language guides return exactly 20 grounded vocabulary terms for Intermediate readers and exactly 10 for Advanced readers.
 Within the level-appropriate difficult/useful candidates, repeated terms are prioritized by exact-occurrence frequency; difficulty and contextual usefulness break ties, and easy function words are never selected for frequency alone.
 
-The learning loop includes a local spaced-repetition review queue, known-word feedback that shapes later guides, and contextual help for Chinese words tapped directly in an article. These learning records stay in browser storage.
+The learning loop includes a local spaced-repetition review queue, known-word feedback that shapes later guides, and contextual help for Chinese words tapped directly in an article. These records stay in browser storage unless the reader explicitly connects their own Google Drive.
 
 ## Run locally
 
@@ -28,6 +28,7 @@ OPENAI_API_KEY=your_server_side_key
 OPENAI_MODEL=gpt-5-mini
 OPENAI_SEARCH_MODEL=gpt-5.5
 FIRECRAWL_API_KEY=your_server_side_firecrawl_key
+GOOGLE_CLIENT_ID=your_public_google_oauth_client_id
 ```
 
 `OPENAI_MODEL` is optional and defaults to `gpt-5-mini`. `OPENAI_SEARCH_MODEL` is also optional and defaults to `gpt-5.5`, the current documented recommendation for Responses API web search. Both use the same `OPENAI_API_KEY`. Use `gpt-5-nano` only for simple repetitive work such as classification, extraction, tagging, or basic summarization. `FIRECRAWL_API_KEY` is required only for the Article link import tab. Paste text and article bookmarks work without Firecrawl. `.env.local` is ignored by Git.
@@ -37,7 +38,20 @@ Discovery continues to use a transparent interest, recency, and topic heuristic.
 
 The custom importer accepts one public HTTPS link or a title plus pasted Chinese text. Link mode makes one server-side Firecrawl single-page extraction request; paste mode performs local app validation and normalization without consuming a Firecrawl credit. Both paths isolate the continuous editorial body and remove common page chrome such as navigation, share widgets, editor lines, comments, and recommendation feeds. Imported article bodies stay in current page memory and are not saved to browser storage.
 
-Saved vocabulary uses versioned browser `localStorage`; it never leaves the device and requires no account or database. Duplicate identity is based on the normalized term, article ID, and original context sentence. If stored data is malformed or unavailable, the app reports a recoverable error and leaves the existing value untouched.
+Saved vocabulary uses versioned browser `localStorage` as its offline-first copy. Duplicate identity is based on the normalized term, article ID, and original context sentence. If stored data is malformed or unavailable, the app reports a recoverable error and leaves the existing value untouched.
+
+### Google Drive sync setup
+
+Drive sync is optional and adds no npm dependency or private account database. It uses Google Identity Services and requests only the non-sensitive `drive.appdata` scope. Google stores one hidden `daily-chinese-read-sync.json` file that only this app can access; the short-lived Google access token stays in memory.
+
+1. In Google Cloud Console, create or select a project and enable **Google Drive API**.
+2. Configure the OAuth consent screen. Add the two or three readers as test users while the OAuth app remains in testing.
+3. Create an **OAuth client ID** of type **Web application**.
+4. Add the deployed site origin, such as `https://chinese-news-eta.vercel.app`, under **Authorized JavaScript origins**. For local testing also add the exact origin printed by `vercel dev`, normally `http://localhost:3000`.
+5. Add the client ID in Vercel as `GOOGLE_CLIENT_ID`. This identifier is browser-visible configuration, not a secret.
+6. Redeploy, open **My Words**, and choose **Connect Google Drive**.
+
+The first connection merges the browser library with the Drive copy. Later saves, reviews, known-word changes, and removals trigger a background sync. On another browser, connecting the same Google account downloads and merges the same library. Deletion timestamps prevent removed records from reappearing. Disconnecting revokes the short-lived authorization while keeping the browser copy.
 
 Related reading uses OpenAI web search against a server-side allowlist of reputable English publishers. The app returns links and short topical descriptions only; subscription links are acceptable and are opened directly at the publisher. Saved articles use a separate versioned browser store containing only canonical URL, title, publication name, and save time—never the article body.
 
@@ -51,6 +65,7 @@ The interface follows `DailyChineseRead_StyleGuide.md`: a light editorial canvas
 - Full article text is fetched only after a reader selects a card.
 - If AI analysis is unavailable or invalid, the original article remains readable and the user can retry.
 - Link import depends on Firecrawl extraction quality; when a link cannot be read, paste the article text instead.
+- Google Drive's browser token model may require the reader to click Connect again after the short-lived token expires; local saving continues while disconnected.
 
 ## Verify
 
@@ -76,6 +91,7 @@ The target is Vercel. A deployment must contain no secret values and must be ver
 - `api/analyze.js` and `api/explain.js` own grounded model requests; prompts, provider configuration, and credentials remain server-side.
 - `api/import.js` owns imported-article validation; its Firecrawl adapter is the only module that knows the extraction provider API.
 - `api/related.js` owns reputable English web search and verifies model URLs against the returned search citations.
+- `api/client-config.js` exposes only browser-safe Drive configuration; Drive data and tokens never pass through it.
 - Publisher-specific parsing stays in separate modules under `api/_shared/adapters/`.
 - `CONTRACTS.md` records stable interfaces; changes under its protected heading require approval.
 

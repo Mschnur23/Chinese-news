@@ -39,10 +39,12 @@ const requiredFiles = [
   "api/word.js",
   "api/import.js",
   "api/related.js",
+  "api/client-config.js",
   "api/_shared/related.js",
   "api/_shared/import.js",
   "api/_shared/import-adapters/firecrawl.js",
   "config.js",
+  "sync-data.js",
   "data/sample.json",
   "CONTRACTS.md",
   "CHECKS.md",
@@ -80,7 +82,7 @@ const ui = await text("ui.js");
 });
 
 const source = await text("source.js");
-["related", "importArticle", "load", "detail", "analyze", "explain", "lookupWord", "save", "list", "remove", "saveArticle", "listArticles", "removeArticle", "reviewQueue", "librarySnapshot", "review", "listKnown", "markKnown", "unmarkKnown"].forEach((name) => {
+["driveConfiguration", "isDriveSyncEnabled", "connectDrive", "syncDrive", "disconnectDrive", "related", "importArticle", "load", "detail", "analyze", "explain", "lookupWord", "save", "list", "remove", "saveArticle", "listArticles", "removeArticle", "reviewQueue", "librarySnapshot", "review", "listKnown", "markKnown", "unmarkKnown"].forEach((name) => {
   check(new RegExp(`async\\s+${name}\\s*\\(`).test(source), `source must expose async ${name}()`);
 });
 
@@ -167,6 +169,9 @@ requiredIds.forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `in
   "related-reading-status", "related-reading-error", "related-reading-list", "related-reading-retry",
   "saved-articles", "saved-articles-title", "saved-articles-status", "saved-articles-notice", "saved-articles-list",
 ].forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `index.html is missing Phase 5 DOM id: ${id}`));
+[
+  "drive-sync", "drive-sync-title", "drive-sync-status", "drive-connect", "drive-sync-now", "drive-disconnect",
+].forEach((id) => check(new RegExp(`id=["']${id}["']`).test(html), `index.html is missing Drive sync DOM id: ${id}`));
 
 const sample = JSON.parse(await text("data/sample.json"));
 check(Array.isArray(sample.relatedReading) && sample.relatedReading.length === 3, "Sample data must contain exactly three related English links");
@@ -323,6 +328,8 @@ check(firecrawlAdapter.includes("process.env.FIRECRAWL_API_KEY"), "Firecrawl cre
 check(!firecrawlAdapter.includes("console."), "The Firecrawl adapter must not log imported content or provider responses");
 const environmentExample = await text(".env.example");
 check(environmentExample.split(/\r?\n/).includes("FIRECRAWL_API_KEY="), ".env.example must document the Firecrawl key without a value");
+check(environmentExample.split(/\r?\n/).includes("GOOGLE_CLIENT_ID="), ".env.example must document the public Google OAuth client ID without a value");
+check(!/localStorage\.setItem\([^\n]*(?:access|token)/i.test(source), "Google access tokens must never be written to browser storage");
 
 const secretCandidates = [...availableFiles].filter((path) => /\.(?:js|json|md|html|css)$/.test(path));
 for (const path of secretCandidates) {
@@ -341,6 +348,7 @@ globalThis.window = { location: { protocol: "http:" }, setTimeout, clearTimeout 
 const { config: checkedConfig } = await import(new URL("../config.js", import.meta.url));
 check(checkedConfig.analysisTermCounts.Intermediate === 20, "Browser config must map Intermediate to 20 terms");
 check(checkedConfig.analysisTermCounts.Advanced === 10, "Browser config must map Advanced to 10 terms");
+check(checkedConfig.googleDriveScope === "https://www.googleapis.com/auth/drive.appdata", "Drive sync must request only the app-data scope");
 const { source: checkedSource } = await import(new URL("../source.js", import.meta.url));
 const emptyLibrary = await checkedSource.librarySnapshot();
 check(emptyLibrary.records.length === 0 && emptyLibrary.articles.length === 0 && emptyLibrary.errors.length === 0, "Library snapshots must load all browser collections through one boundary");

@@ -1,9 +1,14 @@
-import { config } from "./config.js?v=phase5-library-1";
+import { config } from "./config.js?v=drive-sync-1";
+import { driveSyncDocumentVersion, emptyDriveSyncMeta, mergeDriveSyncDocuments } from "./sync-data.js?v=drive-sync-1";
 
 let sampleCache;
 const detailCache = new Map();
 const analysisCache = new Map();
 const relatedCache = new Map();
+let driveAccessToken = "";
+let driveFileId = "";
+let driveClientConfig;
+let driveSyncChain = Promise.resolve();
 
 function remember(cache, key, value, maximumEntries = 40) {
   if (!cache.has(key) && cache.size >= maximumEntries) cache.delete(cache.keys().next().value);
@@ -207,6 +212,104 @@ function writeSavedArticlesStore(records) {
   }
 }
 
+function validTombstones(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const entries = Object.entries(value);
+  if (entries.length > 10000) throw storageError();
+  return Object.fromEntries(entries.map(([id, deletedAt]) => [requiredText(id), validDate(deletedAt)]));
+}
+
+function normalizeDriveSyncMeta(value) {
+  if (value === null || value === undefined) return emptyDriveSyncMeta();
+  if (!value || value.version !== config.driveSyncVersion || !value.tombstones) throw storageError();
+  return {
+    version: config.driveSyncVersion,
+    updatedAt: validDate(value.updatedAt),
+    tombstones: {
+      vocabulary: validTombstones(value.tombstones.vocabulary),
+      knownWords: validTombstones(value.tombstones.knownWords),
+      articles: validTombstones(value.tombstones.articles),
+    },
+  };
+}
+
+function readDriveSyncMeta() {
+  try {
+    const raw = localStorage.getItem(config.driveSyncMetaKey);
+    return normalizeDriveSyncMeta(raw === null ? null : JSON.parse(raw));
+  } catch {
+    throw storageError();
+  }
+}
+
+function writeDriveSyncMeta(meta) {
+  try {
+    localStorage.setItem(config.driveSyncMetaKey, JSON.stringify(meta));
+  } catch {
+    throw storageError();
+  }
+}
+
+function recordSyncMutations(changes) {
+  const changedAt = new Date().toISOString();
+  const meta = readDriveSyncMeta();
+  changes.forEach(({ collection, id, deleted = false }) => {
+    if (deleted) meta.tombstones[collection][id] = changedAt;
+    else delete meta.tombstones[collection][id];
+  });
+  meta.updatedAt = changedAt;
+  writeDriveSyncMeta(meta);
+}
+
+function normalizeDriveSyncDocument(value) {
+  if (!value || value.version !== driveSyncDocumentVersion) throw storageError();
+  if (!Array.isArray(value.vocabulary) || !Array.isArray(value.knownWords) || !Array.isArray(value.articles)) throw storageError();
+  const vocabulary = value.vocabulary.map((record) => normalizeVocabularyRecord(record));
+  const knownWords = value.knownWords.map(normalizeKnownWord);
+  const articles = value.articles.map((record) => normalizeSavedArticle(record));
+  if (new Set(vocabulary.map((record) => record.id)).size !== vocabulary.length) throw storageError();
+  if (new Set(knownWords.map((word) => word.normalized)).size !== knownWords.length) throw storageError();
+  if (new Set(articles.map((article) => article.id)).size !== articles.length) throw storageError();
+  return {
+    version: driveSyncDocumentVersion,
+    updatedAt: validDate(value.updatedAt),
+    vocabulary,
+    knownWords,
+    articles,
+    meta: normalizeDriveSyncMeta(value.meta),
+  };
+}
+
+function localDriveSyncDocument() {
+  const meta = readDriveSyncMeta();
+  return {
+    version: driveSyncDocumentVersion,
+    updatedAt: meta.updatedAt,
+    vocabulary: readVocabularyStore(),
+    knownWords: readKnownWordsStore(),
+    articles: readSavedArticlesStore(),
+    meta,
+  };
+}
+
+function writeDriveSyncDocument(syncValue) {
+  const keys = [config.storageKey, config.knownWordsStorageKey, config.savedArticlesStorageKey, config.driveSyncMetaKey];
+  const previous = new Map(keys.map((key) => [key, localStorage.getItem(key)]));
+  try {
+    writeVocabularyStore(syncValue.vocabulary);
+    writeKnownWordsStore(syncValue.knownWords);
+    writeSavedArticlesStore(syncValue.articles);
+    writeDriveSyncMeta(syncValue.meta);
+  } catch (error) {
+    try {
+      previous.forEach((value, key) => restoreStorageValue(key, value));
+    } catch {
+      // Preserve the original storage failure.
+    }
+    throw error;
+  }
+}
+
 function restoreStorageValue(key, value) {
   if (value === null) localStorage.removeItem(key);
   else localStorage.setItem(key, value);
@@ -271,6 +374,160 @@ async function requestJson(url, options = {}) {
   }
 }
 
+function driveError(message = "Google Drive sync is temporarily unavailable. Your browser copy remains available.") {
+  return new Error(message);
+}
+
+async function readBoundedDriveResponse(response) {
+  const declaredLength = Number(response.headers.get("content-length") || 0);
+  if (declaredLength > config.maximumDriveSyncBytes) throw driveError("The Google Drive sync file is too large to use safely.");
+  const text = await response.text();
+  if (new TextEncoder().encode(text).byteLength > config.maximumDriveSyncBytes) {
+    throw driveError("The Google Drive sync file is too large to use safely.");
+  }
+  return text;
+}
+
+async function driveRequest(path, options = {}) {
+  if (!driveAccessToken) throw driveError("Reconnect Google Drive to continue syncing.");
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), config.driveRequestTimeoutMs);
+  try {
+    const response = await fetch(`${options.upload ? config.googleDriveUploadBaseUrl : config.googleDriveApiBaseUrl}${path}`, {
+      method: options.method || "GET",
+      headers: {
+        Authorization: `Bearer ${driveAccessToken}`,
+        Accept: "application/json",
+        ...(options.json ? { "Content-Type": "application/json" } : {}),
+      },
+      body: options.body,
+      signal: controller.signal,
+    });
+    if (response.status === 401) {
+      driveAccessToken = "";
+      throw driveError("Your Google session expired. Reconnect Drive to continue syncing.");
+    }
+    const text = await readBoundedDriveResponse(response);
+    if (!response.ok) throw driveError();
+    return text ? JSON.parse(text) : {};
+  } catch (error) {
+    if (error?.name === "AbortError") throw driveError("Google Drive took too long to respond. Please try again.");
+    if (error instanceof SyntaxError) throw driveError("Google Drive returned an unreadable sync file.");
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+async function googleClientConfiguration() {
+  if (driveClientConfig) return driveClientConfig;
+  const payload = await requestJson(config.apiRoutes.clientConfig);
+  driveClientConfig = payload.data;
+  return driveClientConfig;
+}
+
+async function requestDriveAccess(prompt) {
+  const clientConfig = await googleClientConfiguration();
+  if (!clientConfig.googleDriveConfigured || !clientConfig.googleClientId) {
+    throw driveError("Google Drive sync is not configured for this deployment yet.");
+  }
+  const oauth = globalThis.google?.accounts?.oauth2;
+  if (!oauth?.initTokenClient) throw driveError("Google authorization could not be loaded. Check your connection and try again.");
+
+  const response = await new Promise((resolve, reject) => {
+    const client = oauth.initTokenClient({
+      client_id: clientConfig.googleClientId,
+      scope: config.googleDriveScope,
+      callback: (tokenResponse) => {
+        if (tokenResponse?.error || !tokenResponse?.access_token) {
+          reject(driveError("Google Drive authorization was not completed."));
+          return;
+        }
+        resolve(tokenResponse);
+      },
+      error_callback: () => reject(driveError("Google Drive authorization was closed or interrupted.")),
+    });
+    client.requestAccessToken({ prompt });
+  });
+  driveAccessToken = response.access_token;
+}
+
+async function findDriveSyncFile() {
+  if (driveFileId) return driveFileId;
+  const query = new URLSearchParams({
+    spaces: "appDataFolder",
+    q: `name='${config.googleDriveFileName}' and trashed=false`,
+    fields: "files(id,name,modifiedTime)",
+    pageSize: "10",
+  });
+  const result = await driveRequest(`/files?${query}`);
+  driveFileId = result.files?.[0]?.id || "";
+  return driveFileId;
+}
+
+async function readRemoteDriveDocument(fileId) {
+  if (!fileId) {
+    const empty = emptyDriveSyncMeta();
+    return { version: driveSyncDocumentVersion, updatedAt: empty.updatedAt, vocabulary: [], knownWords: [], articles: [], meta: empty };
+  }
+  const value = await driveRequest(`/files/${encodeURIComponent(fileId)}?alt=media`);
+  return normalizeDriveSyncDocument(value);
+}
+
+async function writeRemoteDriveDocument(fileId, syncValue) {
+  const body = JSON.stringify(syncValue);
+  if (new TextEncoder().encode(body).byteLength > config.maximumDriveSyncBytes) {
+    throw driveError("Your saved library is too large for the current Drive sync limit.");
+  }
+  if (fileId) {
+    const result = await driveRequest(`/files/${encodeURIComponent(fileId)}?uploadType=media&fields=id,modifiedTime`, {
+      method: "PATCH",
+      upload: true,
+      json: true,
+      body,
+    });
+    return result.id;
+  }
+
+  const multipart = new FormData();
+  multipart.append("metadata", new Blob([JSON.stringify({
+    name: config.googleDriveFileName,
+    parents: ["appDataFolder"],
+    mimeType: "application/json",
+  })], { type: "application/json" }));
+  multipart.append("file", new Blob([body], { type: "application/json" }));
+  const result = await driveRequest("/files?uploadType=multipart&fields=id,modifiedTime", {
+    method: "POST",
+    upload: true,
+    body: multipart,
+  });
+  return result.id;
+}
+
+async function synchronizeDriveLibrary() {
+  const local = localDriveSyncDocument();
+  const fileId = await findDriveSyncFile();
+  const remote = await readRemoteDriveDocument(fileId);
+  const merged = mergeDriveSyncDocuments(local, remote);
+  const syncedAt = new Date().toISOString();
+  merged.updatedAt = syncedAt;
+  merged.meta.updatedAt = syncedAt;
+  writeDriveSyncDocument(merged);
+  driveFileId = await writeRemoteDriveDocument(fileId, merged);
+  return {
+    syncedAt,
+    vocabularyCount: merged.vocabulary.length,
+    knownWordCount: merged.knownWords.length,
+    articleCount: merged.articles.length,
+  };
+}
+
+function enqueueDriveSync() {
+  const operation = driveSyncChain.then(synchronizeDriveLibrary, synchronizeDriveLibrary);
+  driveSyncChain = operation.catch(() => {});
+  return operation;
+}
+
 function normalizeSampleImport(input) {
   if (!input || !["url", "text"].includes(input.mode)) throw new Error("Choose a link or pasted text.");
   if (input.mode === "url") {
@@ -317,6 +574,45 @@ function normalizeSampleImport(input) {
 }
 
 export const source = Object.freeze({
+  async driveConfiguration() {
+    if (!config.featureFlags.driveSync) return { googleDriveConfigured: false, googleClientId: "" };
+    if (config.mode === "sample") return { googleDriveConfigured: false, googleClientId: "" };
+    return googleClientConfiguration();
+  },
+
+  async isDriveSyncEnabled() {
+    try {
+      return localStorage.getItem(config.driveSyncPreferenceKey) === "true";
+    } catch {
+      return false;
+    }
+  },
+
+  async connectDrive(options = {}) {
+    await requestDriveAccess(options.prompt ?? "consent");
+    const result = await enqueueDriveSync();
+    localStorage.setItem(config.driveSyncPreferenceKey, "true");
+    return result;
+  },
+
+  async syncDrive() {
+    return enqueueDriveSync();
+  },
+
+  async disconnectDrive() {
+    const token = driveAccessToken;
+    driveAccessToken = "";
+    driveFileId = "";
+    try {
+      localStorage.removeItem(config.driveSyncPreferenceKey);
+    } catch {
+      throw storageError();
+    }
+    const revoke = globalThis.google?.accounts?.oauth2?.revoke;
+    if (token && revoke) await new Promise((resolve) => revoke(token, resolve));
+    return { connected: false };
+  },
+
   async related(article, options = {}) {
     const cacheKey = `${article.id}:${article.titleZh}:${article.bodyText.length}`;
     if (relatedCache.has(cacheKey)) return relatedCache.get(cacheKey);
@@ -451,6 +747,7 @@ export const source = Object.freeze({
     if (existing) return { added: false, record: existing, records };
     const nextRecords = [candidate, ...records];
     writeVocabularyStore(nextRecords);
+    recordSyncMutations([{ collection: "vocabulary", id: candidate.id }]);
     return { added: true, record: candidate, records: nextRecords };
   },
 
@@ -461,6 +758,7 @@ export const source = Object.freeze({
     if (existing) return { added: false, record: existing, records };
     const nextRecords = [candidate, ...records];
     writeSavedArticlesStore(nextRecords);
+    recordSyncMutations([{ collection: "articles", id: candidate.id }]);
     return { added: true, record: candidate, records: nextRecords };
   },
 
@@ -474,6 +772,7 @@ export const source = Object.freeze({
     const nextRecords = records.filter((record) => record.id !== recordId);
     if (nextRecords.length === records.length) return { removed: false, records };
     writeSavedArticlesStore(nextRecords);
+    recordSyncMutations([{ collection: "articles", id: recordId, deleted: true }]);
     return { removed: true, records: nextRecords };
   },
 
@@ -487,6 +786,7 @@ export const source = Object.freeze({
     const nextRecords = records.filter((record) => record.id !== recordId);
     if (nextRecords.length === records.length) return { removed: false, records };
     writeVocabularyStore(nextRecords);
+    recordSyncMutations([{ collection: "vocabulary", id: recordId, deleted: true }]);
     return { removed: true, records: nextRecords };
   },
 
@@ -544,6 +844,7 @@ export const source = Object.freeze({
     const nextRecords = [...records];
     nextRecords[index] = record;
     writeVocabularyStore(nextRecords);
+    recordSyncMutations([{ collection: "vocabulary", id: record.id }]);
     return { record, records: nextRecords };
   },
 
@@ -556,8 +857,16 @@ export const source = Object.freeze({
     const words = readKnownWordsStore();
     const existing = words.find((word) => word.normalized === candidate.normalized);
     const nextWords = existing ? words : [candidate, ...words];
-    const records = readVocabularyStore().filter((record) => normalizedIdentityPart(record.termZh) !== candidate.normalized);
+    const previousRecords = readVocabularyStore();
+    const records = previousRecords.filter((record) => normalizedIdentityPart(record.termZh) !== candidate.normalized);
     writeKnownAndVocabularyStores(nextWords, records);
+    const removedIds = new Set(records.map((record) => record.id));
+    recordSyncMutations([
+      { collection: "knownWords", id: candidate.normalized },
+      ...previousRecords
+        .filter((record) => !removedIds.has(record.id))
+        .map((record) => ({ collection: "vocabulary", id: record.id, deleted: true })),
+    ]);
     return { added: !existing, word: existing || candidate, words: nextWords, records };
   },
 
@@ -566,6 +875,9 @@ export const source = Object.freeze({
     const words = readKnownWordsStore();
     const nextWords = words.filter((word) => word.normalized !== normalized);
     writeKnownWordsStore(nextWords);
+    if (nextWords.length !== words.length) {
+      recordSyncMutations([{ collection: "knownWords", id: normalized, deleted: true }]);
+    }
     return { removed: nextWords.length !== words.length, words: nextWords };
   },
 });

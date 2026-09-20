@@ -63,3 +63,10 @@ Run this list after every phase. Record failures; never remove a previously pass
 59. Malformed or unknown-version saved-article data produces a recoverable error without overwriting existing browser data. *(Phase 5)*
 60. Full-page imports isolate the continuous editorial body and exclude navigation, sharing controls, comment prompts, editor lines, and recommendation feeds. *(Import quality)*
 61. The reader visually labels and separates the article text from language tools, publication context, the article brief, and related reading. *(Import quality)*
+62. Drive sync is optional; an unconfigured or disconnected state leaves every browser-storage feature usable. *(Drive sync)*
+63. Connecting requests only the Google Drive `drive.appdata` scope and stores no access or refresh token. *(Drive sync)*
+64. A first sync creates one hidden app-data JSON file; later syncs update that file rather than creating duplicates. *(Drive sync)*
+65. Sync merges vocabulary, review state, known words, and saved-article links by stable identity and latest timestamp. *(Drive sync)*
+66. Synced deletion tombstones prevent removed words, known words, and article links from reappearing on another browser. *(Drive sync)*
+67. A malformed, oversized, unauthorized, or unavailable Drive file produces a readable error without overwriting the local browser copy. *(Drive sync)*
+68. The Drive document contains no article body, Google token, API key, or credential. *(Drive sync)*

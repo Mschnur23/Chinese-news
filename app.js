@@ -1,5 +1,5 @@
-import { config } from "./config.js?v=phase5-library-1";
-import { source } from "./source.js?v=phase5-library-1";
+import { config } from "./config.js?v=drive-sync-1";
+import { source } from "./source.js?v=drive-sync-1";
 import {
   clearResults,
   clearReader,
@@ -9,12 +9,16 @@ import {
   hideImportView,
   hideVocabularyView,
   hideReviewSession,
+  loadGoogleIdentityScript,
   markSavedTerms,
   markKnownTerms,
   onArticleSelected,
   onArticleSaveRequested,
   onAnalysisRequested,
   onHomeRequested,
+  onDriveConnectRequested,
+  onDriveDisconnectRequested,
+  onDriveSyncRequested,
   onImportBack,
   onImportModeChanged,
   onImportRequested,
@@ -54,6 +58,7 @@ import {
   setArticleSaveBusy,
   setAnalysisBusy,
   setBusy,
+  setDriveSyncState,
   setSentenceHelpBusy,
   setKnownTermBusy,
   setImportBusy,
@@ -87,7 +92,7 @@ import {
   showSavedArticlesError,
   markArticleSaved,
   revealReviewAnswer,
-} from "./ui.js?v=phase5-library-1";
+} from "./ui.js?v=drive-sync-1";
 
 let currentArticle = null;
 let articleRequestVersion = 0;
@@ -101,6 +106,8 @@ let pendingImportedArticle = null;
 let pendingImportLearnerLevel = config.defaultLearnerLevel;
 let loadRequestVersion = 0;
 const requestControllers = new Map();
+let driveConnected = false;
+let driveSyncTimer = 0;
 
 function beginRequest(name) {
   requestControllers.get(name)?.abort();
@@ -124,6 +131,73 @@ const previewMessages = Object.freeze({
 function readableError(error, fallback) {
   const message = typeof error?.message === "string" ? error.message.trim() : "";
   return message && !/^[A-Z0-9_]+$/.test(message) ? message : fallback;
+}
+
+function driveSyncMessage(result) {
+  const time = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(result.syncedAt));
+  return `Synced ${result.vocabularyCount} words and ${result.articleCount} articles at ${time}.`;
+}
+
+async function runDriveSync({ connect = false, silent = false } = {}) {
+  setDriveSyncState({ configured: true, connected: driveConnected, busy: true, message: connect ? "Connecting securely to Google Drive…" : "Syncing your saved library…" });
+  try {
+    if (connect) await loadGoogleIdentityScript();
+    const result = connect
+      ? await source.connectDrive({ prompt: silent ? "" : "consent" })
+      : await source.syncDrive();
+    driveConnected = true;
+    setDriveSyncState({ connected: true, message: driveSyncMessage(result) });
+    await refreshVocabularyCount();
+    return result;
+  } catch (error) {
+    driveConnected = false;
+    setDriveSyncState({
+      connected: false,
+      message: readableError(error, "Google Drive could not be synced. Your browser copy remains available."),
+      error: !silent,
+    });
+    return null;
+  }
+}
+
+function scheduleDriveSync() {
+  if (!driveConnected) return;
+  window.clearTimeout(driveSyncTimer);
+  driveSyncTimer = window.setTimeout(() => { runDriveSync(); }, 600);
+}
+
+async function initializeDriveSync() {
+  if (!config.featureFlags.driveSync) return;
+  try {
+    const availability = await source.driveConfiguration();
+    if (!availability.googleDriveConfigured) {
+      setDriveSyncState({ configured: false, message: "Drive sync is not configured yet. Your browser copy remains available." });
+      return;
+    }
+    const enabled = await source.isDriveSyncEnabled();
+    if (!enabled) {
+      setDriveSyncState({ configured: true, connected: false });
+      return;
+    }
+    await loadGoogleIdentityScript();
+    await runDriveSync({ connect: true, silent: true });
+  } catch (error) {
+    setDriveSyncState({
+      configured: true,
+      connected: false,
+      message: readableError(error, "Reconnect Google Drive when you are ready to sync."),
+    });
+  }
+}
+
+async function disconnectDrive() {
+  window.clearTimeout(driveSyncTimer);
+  try {
+    await source.disconnectDrive();
+  } finally {
+    driveConnected = false;
+    setDriveSyncState({ connected: false, message: "Drive disconnected. Your saved browser copy was kept." });
+  }
 }
 
 async function loadReading() {
@@ -268,6 +342,7 @@ async function saveCurrentArticle(article) {
     const result = await source.saveArticle(article);
     setArticleSaveBusy(false);
     showArticleSaveResult(true, result.added ? "Saved to your reading list." : "This article is already saved.");
+    if (result.added) scheduleDriveSync();
   } catch (error) {
     setArticleSaveBusy(false);
     showArticleSaveResult(false, readableError(error, "This article link could not be saved."));
@@ -318,6 +393,7 @@ async function markTermKnown({ term, index }) {
     setVocabularyCount(result.records.length);
     markSavedTerms(result.records);
     markKnownTerms(result.words, `${term.termZh} will be excluded from future language guides.`);
+    scheduleDriveSync();
   } catch (error) {
     markKnownTerms([], readableError(error, "This word could not be marked as known."));
   } finally {
@@ -351,6 +427,7 @@ async function saveVocabularyTerm({ article, term, index }) {
       true,
       result.added ? `${term.termZh} was saved to your vocabulary.` : `${term.termZh} is already saved.`,
     );
+    if (result.added) scheduleDriveSync();
   } catch (error) {
     showTermSaveResult(index, false, readableError(error, "This term could not be saved. Please try again."));
   }
@@ -387,6 +464,7 @@ async function removeSavedArticle(id) {
     if (result.records.length) renderSavedArticles(result.records);
     else showSavedArticlesEmpty("No saved articles yet. Save an original link while reading.");
     try { markArticleSaved(result.records); } catch { /* The reader may not be active. */ }
+    if (result.removed) scheduleDriveSync();
   } catch (error) {
     showSavedArticlesError(readableError(error, "That article link could not be removed."));
   } finally {
@@ -397,6 +475,7 @@ async function removeSavedArticle(id) {
 async function markVocabularyKnown(termZh) {
   try {
     await source.markKnown(termZh);
+    scheduleDriveSync();
     await openVocabulary();
   } catch (error) {
     showVocabularyError(readableError(error, "This word could not be marked as known."), false);
@@ -406,6 +485,7 @@ async function markVocabularyKnown(termZh) {
 async function restoreKnownWord(termZh) {
   try {
     await source.unmarkKnown(termZh);
+    scheduleDriveSync();
     await openVocabulary();
   } catch (error) {
     showVocabularyError(readableError(error, "This word could not be restored."), false);
@@ -423,6 +503,7 @@ async function rateReview(rating) {
   setReviewBusy(true);
   try {
     await source.review(current.id, rating);
+    scheduleDriveSync();
     reviewRecords.shift();
     if (reviewRecords.length) startReview();
     else {
@@ -466,6 +547,7 @@ async function removeVocabulary(id) {
     markSavedTerms(result.records);
     if (result.records.length) renderVocabulary(result.records);
     else showVocabularyEmpty("No saved terms yet. Open an article and save a term from its language guide.");
+    if (result.removed) scheduleDriveSync();
   } catch (error) {
     showVocabularyError(readableError(error, "That saved term could not be removed. Your other terms were not changed."), false);
   } finally {
@@ -562,6 +644,16 @@ onReviewStart(startReview);
 onReviewReveal(revealReviewAnswer);
 onReviewRated(rateReview);
 onReviewExit(() => hideReviewSession());
+onDriveConnectRequested(async () => {
+  const result = await runDriveSync({ connect: true });
+  if (result) await openVocabulary();
+});
+onDriveSyncRequested(async () => {
+  const result = await runDriveSync();
+  if (result) await openVocabulary();
+});
+onDriveDisconnectRequested(disconnectDrive);
 setPreviewControlsVisible(config.featureFlags.showPreviewStates);
 refreshVocabularyCount();
 loadReading();
+initializeDriveSync();

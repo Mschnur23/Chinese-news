@@ -45,7 +45,8 @@ Use:
 - Git, GitHub, and Vercel;
 - one LLM API for ranking and language interpretation;
 - public feeds/pages and, only where necessary, a retrieval service such as Firecrawl;
-- browser `localStorage` for the Phase 3 vocabulary list.
+- browser `localStorage` for the Phase 3 vocabulary list and offline-first library copy;
+- optional Google Identity Services token authorization and the Google Drive `appDataFolder` for the approved sync phase, without an added package or proprietary account database.
 
 Do not add a frontend framework, CSS framework, bundler, state library, UI library, linter, test runner, database, or authentication system. Install nothing during foundation work. If a package later becomes genuinely necessary, stop first and document why platform APIs cannot meet the need, its security and deployment impact, and the smallest alternative.
 
@@ -141,7 +142,7 @@ For this project:
 
 Sentence explanation is also exposed through `source.js`, never fetched directly by `app.js`. Add a documented method such as `source.explain(selection)` in Phase 2 rather than bypassing the boundary. Any additive public method becomes a contract.
 
-All network calls and browser persistence enter the application through `source.js`. Publisher-specific retrieval, secrets, prompt text, and model-provider details stay server-side.
+All network calls and browser persistence enter the application through `source.js`. The approved Drive sync is the sole exception to the server-only provider-call rule: after explicit user authorization, `source.js` may call Google Drive REST endpoints directly with a short-lived in-memory access token. Publisher-specific retrieval, secrets, prompt text, and model-provider details stay server-side.
 
 ### `config.js` — all tunables
 

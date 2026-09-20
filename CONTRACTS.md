@@ -157,6 +157,29 @@ Every server route returns one of:
 
 Keys are always present. Public errors contain no stack traces, provider output, prompts, secrets, or publisher HTML.
 
+### Google Drive sync document
+
+```js
+{
+  version: 1,
+  updatedAt: "ISO-8601 string",
+  vocabulary: [VocabularyRecord],
+  knownWords: [KnownWord],
+  articles: [SavedArticle],
+  meta: {
+    version: 1,
+    updatedAt: "ISO-8601 string",
+    tombstones: {
+      vocabulary: { "record id": "ISO-8601 deletion time" },
+      knownWords: { "normalized term": "ISO-8601 deletion time" },
+      articles: { "article id": "ISO-8601 deletion time" }
+    }
+  }
+}
+```
+
+This document is stored as `daily-chinese-read-sync.json` in the user's hidden Google Drive `appDataFolder`. It never contains article bodies, Google tokens, API keys, or credentials. Records merge by stable identity and their latest save/review timestamp; a newer tombstone wins over an older record.
+
 ## Reserved API routes
 
 | Route | Method | Introduced | Responsibility |
@@ -168,6 +191,7 @@ Keys are always present. Public errors contain no stack traces, provider output,
 | `/api/word` | `POST` | Learning loop | Explain one tapped article word in its verified sentence context. |
 | `/api/import` | `POST` | Phase 4 | Validate pasted text or extract one public HTTPS article and return an imported article. |
 | `/api/related` | `POST` | Phase 5 | Search for and return three verified reputable English links on the article topic. |
+| `/api/client-config` | `GET` | Drive sync | Return whether Drive sync is configured and the public Google OAuth client ID. |
 
 ## DO NOT CHANGE WITHOUT ASKING
 
@@ -206,6 +230,7 @@ The normal site URL uses live data. Adding `?preview=1` switches that browser se
 - `source.importArticle(input)` → one normalized imported `ArticleDetail`; pasted text and link extraction both enter through this method.
 - `source.related(article)` → `{ items: RelatedArticle[] }` containing exactly three verified links.
 - `source.saveArticle(article)`, `source.listArticles()`, and `source.removeArticle(id)` are the saved-article persistence boundary.
+- `source.driveConfiguration()`, `source.isDriveSyncEnabled()`, `source.connectDrive(options)`, `source.syncDrive()`, and `source.disconnectDrive()` are the optional Google Drive synchronization boundary.
 
 All browser network and persistence operations enter through `source.js`.
 
@@ -223,6 +248,16 @@ Allowed values are `Intermediate` and `Advanced`.
 - Known-word key: `daily-chinese-read:v1:known-words`; stored value: `{ version: 1, words: KnownWord[] }`.
 - Unknown versions or malformed values produce a recoverable storage error and are never silently overwritten.
 - Saved-article key: `daily-chinese-read:v1:articles`; stored value: `{ version: 1, records: SavedArticle[] }`.
+- Drive preference key: `daily-chinese-read:v1:drive-sync-enabled`; it contains no token or account identifier.
+- Drive metadata key: `daily-chinese-read:v1:drive-sync-meta`; it contains versioned update time and deletion tombstones only.
+
+### Google Drive sync details
+
+- Phase adds DOM IDs `drive-sync`, `drive-sync-title`, `drive-sync-status`, `drive-connect`, `drive-sync-now`, and `drive-disconnect`.
+- `loadGoogleIdentityScript()`, `setDriveSyncState(state)`, `onDriveConnectRequested(handler)`, `onDriveSyncRequested(handler)`, and `onDriveDisconnectRequested(handler)` are additive `ui.js` exports.
+- Authorization uses Google Identity Services' browser token model with only `https://www.googleapis.com/auth/drive.appdata`.
+- The short-lived access token remains in memory and is never written to storage, the sync document, logs, or a server response.
+- Local storage remains usable before connection, while offline, and after disconnection.
 
 ### Source identifiers
 

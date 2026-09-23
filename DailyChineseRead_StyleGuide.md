@@ -2,16 +2,13 @@
 
 ## Overall Visual Direction
 
-- Sophisticated, mobile-first Chinese editorial publication with a subtle learning layer.
-- Warm ivory paper and softly contrasting editorial surfaces.
-- Ink-black Chinese headlines set in a Song/Ming-style serif stack.
-- Muted umber-gray metadata.
-- One restrained rust-red accent, with muted green reserved for success.
-- Rounded article cards with subtle borders and shadows.
-- Generous whitespace.
-- Draw on Noema for atmosphere and expressive English display type, and Initium Media for Chinese hierarchy and long-form rhythm.
-- The result should feel like an independent magazine, not a SaaS dashboard or gamified language app.
-- Avoid gradients, neon, glassmorphism, giant AI icons, chat bubbles, or obvious “AI-generated” visual tropes.
+- Radical-minimalist Chinese editorial publication with a quiet learning layer.
+- Pure white canvas, true black typography, gray metadata, and a single restrained vermilion interaction accent.
+- Oversized Song/Ming-style Chinese headlines and a strict asymmetric editorial grid.
+- Square geometry, hairline rules, hard edges, and abundant unfilled space.
+- Reporting images are shown in monochrome to keep the page typographic and cohesive.
+- The interface should feel deliberately art-directed and publication-led, never like a SaaS dashboard, card library, or gamified language app.
+- Avoid cream and beige palettes, rounded containers, drop shadows, gradients, neon, glassmorphism, decorative blobs, giant AI icons, chat bubbles, and generic “premium editorial” styling.
 
 ## Color System
 
@@ -19,18 +16,18 @@ Use CSS custom properties so the visual system stays consistent and easy to tune
 
 ```css
 :root {
-  --bg: #F2EDE3;
-  --surface: #FBF8F0;
-  --text-primary: #1B1916;
-  --text-secondary: #746E64;
-  --border: #D9D1C4;
+  --bg: #FFFFFF;
+  --surface: #FFFFFF;
+  --text-primary: #050505;
+  --text-secondary: #686868;
+  --border: #CFCFCF;
 
-  --accent: #A53F2B;
-  --accent-soft: #F1DFD5;
+  --accent: #E2211C;
+  --accent-soft: #FFF0EF;
 
-  --tag-bg: #E8E1D6;
-  --saved: #39634F;
-  --error: #9F302C;
+  --tag-bg: #F3F3F1;
+  --saved: #14613A;
+  --error: #B51F1A;
 }
 ```
 
@@ -86,7 +83,7 @@ Recommended use:
 
 ## Header
 
-Keep the header simple.
+Keep the header flat, typographic, and separated from the page by one black rule.
 
 Example:
 
@@ -101,18 +98,9 @@ Category pills may include:
 - Policy
 - Society
 
-Selected pill:
+Selected destinations use a short vermilion underline. Do not use navigation pills.
 
-- Electric-blue background.
-- White text.
-
-Unselected pill:
-
-- Light-gray or white background.
-- Dark text.
-- Subtle border.
-
-Do not use a large hero banner.
+The homepage may use an oversized typographic opening paired with one documentary image. It must not become a generic marketing hero.
 
 ## Home / Article Discovery Screen
 
@@ -140,13 +128,13 @@ Suggested card structure:
 └────────────────────────────────────┘
 ```
 
-Card styling:
+Story styling:
 
-- White surface.
-- Roughly 16px corner radius.
-- Subtle border.
-- Very light shadow only if needed.
-- Comfortable internal spacing.
+- White surface continuous with the page.
+- Square corners and no shadow.
+- Hairline dividers and large gray folio numbers.
+- A lead story may span the grid; subsequent stories form a strict editorial index.
+- Comfortable internal spacing without card-like containers.
 - Avoid unnecessary descriptive copy.
 - Use the original publisher's lead image when it is available over HTTPS. Never invent an editorial image or show a broken placeholder.
 
@@ -170,7 +158,7 @@ Suggested top structure:
 
 ### English Gist
 
-Show a small warm-tint card near the top.
+Show a compact, rule-separated block near the end of the reading tools.
 
 Example:
 
@@ -230,10 +218,10 @@ Unhighlighted Chinese words may use a quiet hover/focus treatment to signal cont
 
 Recommended treatment:
 
-- Very pale rust-tint background.
-- Dark rust text.
-- Small radius.
-- Optional subtle underline.
+- Very pale vermilion-tint background.
+- Black text with a vermilion underline.
+- Square edges.
+- Enough contrast to remain visible without resembling a marker pen.
 
 Avoid bright marker-yellow or neon highlighting.
 
@@ -263,15 +251,15 @@ Suggested structure:
 
 Style:
 
-- White floating card.
+- White floating panel with square edges.
 - Compact width.
-- Subtle border and shadow.
-- Rust-red save action.
+- One black border; shadow only when required to separate it from article text.
+- Vermilion save action.
 - No full-screen modal unless required on very small screens.
 
 ## Sentence Help
 
-When the user selects a difficult sentence, show a compact helper card rather than replacing the reading view.
+When the user selects a difficult sentence, show a compact ruled helper panel rather than replacing the reading view.
 
 Suggested structure:
 
@@ -315,24 +303,16 @@ to implement / put into practice
 From: 36Kr · Sep 12
 ```
 
-Optional filters:
-
-- All
-- Recently Added
-- By Topic
-
-Do not add flashcards or spaced repetition in the MVP.
+The saved-word area also contains the existing focused flashcard session and Anki export. Keep both visually secondary to the reading library and use the same square, rule-based system.
 
 ## Navigation
 
 ### Mobile
 
-Use a simple bottom navigation with approximately four destinations:
+Use a simple bottom navigation with two destinations:
 
-- Home
+- Read
 - My Words
-- Explore / Topics
-- Settings
 
 Use simple outline icons.
 
@@ -357,9 +337,9 @@ Do not build a large dashboard shell.
 
 ### Desktop
 
-- Center the content.
-- Feed width: roughly 720–850px maximum.
-- Reading column: roughly 680–760px maximum.
+- Center the overall publication grid at up to roughly 1440px.
+- Use the wider canvas for asymmetric discovery layouts and generous negative space.
+- Keep the actual reading column around 680–760px maximum.
 - Do not stretch article text across the full screen.
 
 ## Visual Behaviors to Avoid
@@ -370,14 +350,14 @@ Do not use:
 - Neon accents.
 - Glassmorphism.
 - Excessive shadows.
-- Giant hero banners.
+- Generic marketing hero banners; an editorial typographic opening is allowed.
 - Dashboard metric cards.
 - Emoji icons.
 - Chat-style AI assistant panels.
 - Excessive explanatory text.
 - Dark mode as the default design.
 - Excessive pill-shaped UI.
-- Three-column SaaS layouts.
+- Three-column SaaS card layouts; editorial columns separated by rules are allowed.
 - Decorative animation.
 
 The design principle should be:
@@ -390,15 +370,15 @@ Not:
 
 ## Phase 3 Visual / UX Acceptance Checklist
 
-- [ ] Home screen follows the warm ivory, ink, and rust editorial direction.
-- [ ] Article cards use consistent image, headline, metadata, and tag styling.
+- [ ] Home screen follows the stark white, black, and restrained vermilion direction.
+- [ ] Article stories use consistent monochrome images, headlines, metadata, folios, and rule styling without rounded card containers.
 - [ ] Mobile layout works cleanly at 375px width.
 - [ ] Desktop content remains centered and readable.
 - [ ] Article typography is calmer and larger than feed typography.
 - [ ] Vocabulary highlighting is subtle and consistent.
 - [ ] Hover/tap definition cards feel polished and lightweight.
 - [ ] Save-word interaction gives clear feedback.
-- [ ] Category pills have consistent selected and unselected states.
+- [ ] Navigation and selected states use consistent short vermilion underlines rather than pills.
 - [ ] Loading, empty, and error states use the same design language.
 - [ ] No frontend framework or CSS framework is added solely for styling.
 - [ ] No existing functionality from earlier phases is broken.
@@ -409,12 +389,12 @@ Use the Daily Chinese Read mockups as the visual reference. Reproduce their visu
 
 Prioritize:
 
-- warm ivory paper,
-- restrained rust-red accent,
-- expressive English display type and Song/Ming Chinese reading type,
-- compact article cards,
-- subtle category pills,
-- generous whitespace,
-- polished vocabulary popovers.
+- pure white canvas and true black typography,
+- a single restrained vermilion interaction accent,
+- expressive English display type and oversized Song/Ming Chinese editorial type,
+- square story blocks separated by hairline rules,
+- monochrome reporting photography,
+- generous whitespace and deliberate asymmetry,
+- polished, compact vocabulary popovers.
 
 Do not redesign the information architecture or add new product features during visual polish. This phase should improve presentation, readability, responsiveness, and interaction quality only.

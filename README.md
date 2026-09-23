@@ -55,7 +55,7 @@ The first connection merges the browser library with the Drive copy. Later saves
 
 Related reading uses OpenAI web search against a server-side allowlist of reputable English publishers. The app returns links and short topical descriptions only; subscription links are acceptable and are opened directly at the publisher. Saved articles use a separate versioned browser store containing only canonical URL, title, publication name, and save time—never the article body.
 
-The interface follows `DailyChineseRead_StyleGuide.md`: a light editorial canvas, black Chinese headlines, muted metadata, restrained blue emphasis, compact rounded surfaces, a centered reading column, and simple Home/My Words navigation on mobile.
+The interface follows `DailyChineseRead_StyleGuide.md`: a stark white editorial canvas, high-contrast black Chinese typography, square geometry, monochrome reporting images, a restrained vermilion interaction accent, and simple Home/My Words navigation on mobile.
 
 ## Source limitations
 

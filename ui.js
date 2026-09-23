@@ -262,7 +262,7 @@ export function setBusy(isBusy) {
   elements.loadButton.disabled = isBusy;
   elements.stateSelect.disabled = isBusy;
   elements.loadButton.setAttribute("aria-busy", String(isBusy));
-  elements.loadButton.textContent = isBusy ? "正在准备…" : "查看今日文章";
+  elements.loadButton.textContent = isBusy ? "正在准备…" : "更新本期选读";
 }
 
 export function setImportMode(mode) {

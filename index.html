@@ -7,8 +7,8 @@
     <meta name="theme-color" content="#1b1916">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102b2b'/%3E%3Cpath d='M18 18h28v7H35v21h-7V25H18z' fill='%23f3e9d2'/%3E%3Ccircle cx='45' cy='43' r='6' fill='%23e05a3f'/%3E%3C/svg%3E">
     <title>Daily Chinese Read</title>
-    <link rel="stylesheet" href="./style.css?v=drive-sync-1">
-    <script type="module" src="./app.js?v=drive-sync-1"></script>
+    <link rel="stylesheet" href="./style.css?v=flashcards-2">
+    <script type="module" src="./app.js?v=flashcards-2"></script>
   </head>
   <body>
     <a class="skip-link" href="#article-list">Skip to articles</a>
@@ -235,28 +235,34 @@
         </section>
         <section class="review-summary" id="review-summary" aria-labelledby="review-title">
           <div>
-            <p class="eyebrow">Spaced repetition</p>
-            <h3 id="review-title"><span id="review-due-count">0</span> due for review</h3>
-            <p>Practice each word in the sentence where you found it.</p>
+            <p class="eyebrow">Flashcards</p>
+            <h3 id="review-title">Study your saved words</h3>
+            <p>Chinese on the front, pinyin and English on the back. <span id="review-due-count">0</span> currently due.</p>
           </div>
-          <button class="primary-button" id="review-start" type="button" disabled>Start review</button>
+          <div class="review-summary__actions">
+            <button class="secondary-button" id="export-anki" type="button" disabled>Export to Anki</button>
+            <button class="primary-button" id="review-start" type="button" disabled>Start flashcards</button>
+          </div>
+          <p class="review-export-status" id="review-export-status" role="status" aria-live="polite"></p>
         </section>
         <section class="review-session" id="review-session" aria-labelledby="review-term" tabindex="-1" hidden>
           <div class="review-session__topline">
-            <p class="eyebrow" id="review-progress">Review</p>
-            <button class="text-button" id="review-exit" type="button">Exit review</button>
+            <p class="eyebrow" id="review-progress">Flashcards</p>
+            <button class="text-button" id="review-exit" type="button">Exit flashcards</button>
           </div>
-          <h3 id="review-term"></h3>
-          <blockquote id="review-context"></blockquote>
-          <button class="secondary-button" id="review-reveal" type="button">Show answer</button>
-          <div class="review-answer" id="review-answer" hidden>
-            <p id="review-pinyin"></p>
-            <p id="review-meaning"></p>
-            <div class="review-ratings" aria-label="Review result">
-              <button type="button" data-review-rating="again">Again · 10 min</button>
-              <button type="button" data-review-rating="good">Good</button>
-              <button type="button" data-review-rating="easy">Easy</button>
-            </div>
+          <button class="flashcard" id="review-reveal" type="button" aria-expanded="false">
+            <span class="flashcard__front" id="review-term"></span>
+            <span class="flashcard__prompt">Tap to reveal</span>
+            <span class="review-answer flashcard__back" id="review-answer" hidden>
+              <span id="review-pinyin"></span>
+              <span id="review-meaning"></span>
+            </span>
+          </button>
+          <blockquote id="review-context" hidden></blockquote>
+          <div class="review-ratings" id="review-ratings" aria-label="Flashcard result" hidden>
+            <button type="button" data-review-rating="again">Again · 10 min</button>
+            <button type="button" data-review-rating="good">Good</button>
+            <button type="button" data-review-rating="easy">Easy</button>
           </div>
         </section>
         <p id="vocabulary-status" class="status" role="status" aria-live="polite"></p>

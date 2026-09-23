@@ -7,6 +7,31 @@ import { enforcePaidRequestLimit, resetPaidRequestLimitsForTests } from "../api/
 import { serverConfig } from "../api/_shared/server-config.js";
 import { requestRelatedReading, requestStructuredModel } from "../api/_shared/model.js";
 import { emptyDriveSyncMeta, mergeDriveSyncDocuments } from "../sync-data.js";
+import { buildAnkiExport } from "../anki-export.js";
+
+test("Anki export creates Chinese-front cards with escaped contextual backs", () => {
+  const file = buildAnkiExport([
+    {
+      termZh: "案例",
+      pinyin: "àn lì",
+      meaningEn: "case <law>",
+      contextSentenceZh: "这是一个案例。",
+      articleTitleZh: "法治观察",
+      sourceName: "界面 新闻",
+      canonicalUrl: "https://example.test/article",
+    },
+  ]);
+  assert.match(file, /#columns:Chinese\tEnglish\tTags/);
+  assert.match(file, /案例\t<div class="pinyin">àn lì<\/div><div class="meaning">case &lt;law&gt;<\/div>/);
+  assert.match(file, /daily_chinese_read source::界面_新闻/);
+  assert.equal(file.split("\n").filter((line) => line.startsWith("案例\t")).length, 1);
+});
+
+test("Anki export deduplicates repeated Chinese fronts", () => {
+  const record = { termZh: "设施", pinyin: "shèshī", meaningEn: "facilities" };
+  const file = buildAnkiExport([record, { ...record, meaningEn: "infrastructure" }]);
+  assert.equal(file.split("\n").filter((line) => line.startsWith("设施\t")).length, 1);
+});
 
 test("short extraction never restores unfiltered page furniture", () => {
   const result = extractEditorialParagraphs(`首页 登录 下载客户端\n\n这是一则很短的中文新闻正文。\n\n相关阅读 广告合作`, {

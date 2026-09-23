@@ -1,5 +1,6 @@
 import { config } from "./config.js?v=drive-sync-1";
 import { source } from "./source.js?v=drive-sync-1";
+import { buildAnkiExport } from "./anki-export.js?v=flashcards-2";
 import {
   clearResults,
   clearReader,
@@ -27,6 +28,7 @@ import {
   onKnownTermRequested,
   onKnownWordRestoreRequested,
   onReviewExit,
+  onAnkiExportRequested,
   onReviewRated,
   onReviewReveal,
   onReviewStart,
@@ -92,7 +94,9 @@ import {
   showSavedArticlesError,
   markArticleSaved,
   revealReviewAnswer,
-} from "./ui.js?v=drive-sync-1";
+  downloadAnkiExport,
+  showAnkiExportStatus,
+} from "./ui.js?v=flashcards-2";
 
 let currentArticle = null;
 let articleRequestVersion = 0;
@@ -102,6 +106,7 @@ let wordRequestVersion = 0;
 let relatedRequestVersion = 0;
 let reviewRecords = [];
 let reviewTotal = 0;
+let vocabularyRecords = [];
 let pendingImportedArticle = null;
 let pendingImportLearnerLevel = config.defaultLearnerLevel;
 let loadRequestVersion = 0;
@@ -440,9 +445,14 @@ async function openVocabulary() {
   try {
     const { records, due, known, articles, errors } = await source.librarySnapshot();
     setVocabularyCount(records.length);
-    reviewRecords = due;
-    reviewTotal = due.length;
-    renderReviewSummary(due);
+    vocabularyRecords = records;
+    const dueIds = new Set(due.map((record) => record.id));
+    reviewRecords = [...records].sort((left, right) => {
+      const dueDifference = Number(dueIds.has(right.id)) - Number(dueIds.has(left.id));
+      return dueDifference || new Date(left.reviewDueAt) - new Date(right.reviewDueAt);
+    });
+    reviewTotal = reviewRecords.length;
+    renderReviewSummary(records, due.length);
     hideReviewSession();
     renderKnownWords(known);
     if (articles.length) renderSavedArticles(articles);
@@ -497,6 +507,16 @@ function startReview() {
   renderReviewCard(reviewRecords[0], reviewTotal - reviewRecords.length + 1, reviewTotal);
 }
 
+function exportVocabularyToAnki() {
+  try {
+    const contents = buildAnkiExport(vocabularyRecords);
+    downloadAnkiExport(contents, "daily-chinese-read-anki.txt");
+    showAnkiExportStatus(`Exported ${new Set(vocabularyRecords.map((record) => record.termZh.normalize("NFKC").replace(/\s+/g, ""))).size} flashcards. Import the file into Anki as a Basic note type.`);
+  } catch (error) {
+    showAnkiExportStatus(readableError(error, "Your Anki file could not be prepared."), true);
+  }
+}
+
 async function rateReview(rating) {
   const current = reviewRecords[0];
   if (!current) return;
@@ -507,7 +527,7 @@ async function rateReview(rating) {
     reviewRecords.shift();
     if (reviewRecords.length) startReview();
     else {
-      hideReviewSession("Review complete. Your next reviews have been scheduled.");
+      hideReviewSession("Flashcards complete. Your next reviews have been scheduled.");
       await openVocabulary();
     }
   } catch (error) {
@@ -641,6 +661,7 @@ onSavedArticleRemoveRequested(removeSavedArticle);
 onVocabularyKnownRequested(markVocabularyKnown);
 onKnownWordRestoreRequested(restoreKnownWord);
 onReviewStart(startReview);
+onAnkiExportRequested(exportVocabularyToAnki);
 onReviewReveal(revealReviewAnswer);
 onReviewRated(rateReview);
 onReviewExit(() => hideReviewSession());

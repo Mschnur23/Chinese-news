@@ -72,6 +72,8 @@ const elements = {
   vocabularyCount: document.querySelector("#vocabulary-count"),
   vocabularySaveStatus: document.querySelector("#vocabulary-save-status"),
   vocabulary: document.querySelector("#vocabulary"),
+  vocabularyToolbar: document.querySelector(".vocabulary__toolbar"),
+  vocabularyHeader: document.querySelector(".vocabulary__header"),
   vocabularyBack: document.querySelector("#vocabulary-back"),
   vocabularyStatus: document.querySelector("#vocabulary-status"),
   vocabularyNotice: document.querySelector("#vocabulary-notice"),
@@ -79,12 +81,15 @@ const elements = {
   reviewSummary: document.querySelector("#review-summary"),
   reviewDueCount: document.querySelector("#review-due-count"),
   reviewStart: document.querySelector("#review-start"),
+  ankiExport: document.querySelector("#export-anki"),
+  ankiExportStatus: document.querySelector("#review-export-status"),
   reviewSession: document.querySelector("#review-session"),
   reviewProgress: document.querySelector("#review-progress"),
   reviewTerm: document.querySelector("#review-term"),
   reviewContext: document.querySelector("#review-context"),
   reviewReveal: document.querySelector("#review-reveal"),
   reviewAnswer: document.querySelector("#review-answer"),
+  reviewRatings: document.querySelector("#review-ratings"),
   reviewPinyin: document.querySelector("#review-pinyin"),
   reviewMeaning: document.querySelector("#review-meaning"),
   reviewExit: document.querySelector("#review-exit"),
@@ -1017,6 +1022,10 @@ export function onReviewStart(handler) {
   elements.reviewStart.addEventListener("click", handler);
 }
 
+export function onAnkiExportRequested(handler) {
+  elements.ankiExport.addEventListener("click", handler);
+}
+
 export function onReviewExit(handler) {
   elements.reviewExit.addEventListener("click", handler);
 }
@@ -1026,7 +1035,7 @@ export function onReviewReveal(handler) {
 }
 
 export function onReviewRated(handler) {
-  elements.reviewAnswer.addEventListener("click", (event) => {
+  elements.reviewRatings.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-review-rating]");
     if (button) handler(button.dataset.reviewRating);
   });
@@ -1127,41 +1136,56 @@ export function setVocabularyRemoveBusy(id, isBusy) {
   button.textContent = isBusy ? "Removing…" : "Remove";
 }
 
-export function renderReviewSummary(records) {
+export function renderReviewSummary(records, dueCount = records.length) {
   const count = records.length;
-  elements.reviewDueCount.textContent = String(count);
+  elements.reviewDueCount.textContent = String(dueCount);
   elements.reviewStart.disabled = count === 0;
-  elements.reviewStart.textContent = count ? `Review ${count}` : "Nothing due";
+  elements.ankiExport.disabled = count === 0;
+  elements.reviewStart.textContent = count ? `Study ${count} ${count === 1 ? "card" : "cards"}` : "No flashcards yet";
+  elements.ankiExportStatus.textContent = "";
+  elements.ankiExportStatus.classList.remove("review-export-status--error");
 }
 
 export function renderReviewCard(record, position, total) {
+  elements.vocabularyToolbar.hidden = true;
+  elements.vocabularyHeader.hidden = true;
+  elements.driveSync.hidden = true;
+  elements.savedArticles.hidden = true;
   elements.reviewSummary.hidden = true;
   elements.vocabularyList.hidden = true;
   elements.knownWords.hidden = true;
   elements.vocabularyStatus.hidden = true;
   elements.reviewSession.hidden = false;
-  elements.reviewProgress.textContent = `Review ${position} of ${total}`;
+  elements.reviewProgress.textContent = `Card ${position} of ${total}`;
   elements.reviewTerm.textContent = record.termZh;
   elements.reviewContext.textContent = record.contextSentenceZh;
   elements.reviewPinyin.textContent = record.pinyin;
   elements.reviewMeaning.textContent = record.meaningEn;
   elements.reviewAnswer.hidden = true;
-  elements.reviewReveal.hidden = false;
+  elements.reviewRatings.hidden = true;
+  elements.reviewReveal.setAttribute("aria-expanded", "false");
+  elements.reviewReveal.querySelector(".flashcard__prompt").hidden = false;
   elements.reviewSession.focus();
 }
 
 export function revealReviewAnswer() {
   elements.reviewAnswer.hidden = false;
-  elements.reviewReveal.hidden = true;
-  elements.reviewAnswer.querySelector("button")?.focus();
+  elements.reviewRatings.hidden = false;
+  elements.reviewReveal.setAttribute("aria-expanded", "true");
+  elements.reviewReveal.querySelector(".flashcard__prompt").hidden = true;
+  elements.reviewRatings.querySelector("button")?.focus();
 }
 
 export function setReviewBusy(isBusy) {
-  elements.reviewAnswer.querySelectorAll("button").forEach((button) => { button.disabled = isBusy; });
+  elements.reviewRatings.querySelectorAll("button").forEach((button) => { button.disabled = isBusy; });
 }
 
 export function hideReviewSession(message = "") {
   elements.reviewSession.hidden = true;
+  elements.vocabularyToolbar.hidden = false;
+  elements.vocabularyHeader.hidden = false;
+  elements.driveSync.hidden = !config.featureFlags.driveSync;
+  elements.savedArticles.hidden = false;
   elements.reviewSummary.hidden = false;
   elements.vocabularyList.hidden = false;
   elements.knownWords.hidden = false;
@@ -1172,6 +1196,21 @@ export function hideReviewSession(message = "") {
 export function setVocabularyCount(count) {
   elements.vocabularyCount.textContent = String(count);
   elements.vocabularyCount.setAttribute("aria-label", `${count} saved ${count === 1 ? "term" : "terms"}`);
+}
+
+export function downloadAnkiExport(contents, filename) {
+  const blob = new Blob(["\uFEFF", contents], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+export function showAnkiExportStatus(message, isError = false) {
+  elements.ankiExportStatus.textContent = message;
+  elements.ankiExportStatus.classList.toggle("review-export-status--error", isError);
 }
 
 export function showVocabularyError(message, clearList = true) {

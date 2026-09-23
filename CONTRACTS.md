@@ -312,3 +312,10 @@ This replaces the Phase 0 `yicai` identifier and migrates the source set from tw
 - Returned links must be HTTPS, unique, allowlisted, and present in provider search citations. Subscriber-only destinations are allowed, but the app never bypasses access or fetches their article bodies.
 - `onArticleSaveRequested(handler)`, `setArticleSaveBusy(isBusy)`, `showArticleSaveResult(isSaved, message)`, `markArticleSaved(records)`, `clearRelatedReading()`, `setRelatedReadingBusy(isBusy)`, `renderRelatedReading(items)`, `showRelatedReadingError(message)`, `onRelatedReadingRetry(handler)`, `renderSavedArticles(records)`, `showSavedArticlesEmpty(message)`, `showSavedArticlesError(message)`, `setSavedArticleRemoveBusy(id, isBusy)`, and `onSavedArticleRemoveRequested(handler)` are additive `ui.js` exports.
 - Phase 5 adds DOM IDs `reader-save`, `save-article`, `article-save-status`, `related-reading`, `related-reading-title`, `related-reading-status`, `related-reading-error`, `related-reading-list`, `related-reading-retry`, `saved-articles`, `saved-articles-title`, `saved-articles-status`, `saved-articles-notice`, and `saved-articles-list`.
+
+### Flashcards and Anki export
+
+- Flashcards use the existing `VocabularyRecord` collection and `source.review()` scheduling boundary. They add no second progress store.
+- The unrevealed face contains only `termZh`. Revealing it shows `pinyin` and `meaningEn`; Again, Good, and Easy update the existing review record.
+- Anki export is a local UTF-8 tab-separated download. It contains a Chinese front, an HTML back with pinyin, meaning, bounded source context, and tags. It makes no network request and exports no review schedule, token, credential, or full article body.
+- Additive DOM IDs are `export-anki`, `review-export-status`, and `review-ratings`.

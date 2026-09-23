@@ -70,3 +70,6 @@ Run this list after every phase. Record failures; never remove a previously pass
 66. Synced deletion tombstones prevent removed words, known words, and article links from reappearing on another browser. *(Drive sync)*
 67. A malformed, oversized, unauthorized, or unavailable Drive file produces a readable error without overwriting the local browser copy. *(Drive sync)*
 68. The Drive document contains no article body, Google token, API key, or credential. *(Drive sync)*
+69. Flashcards show only the Chinese term before reveal, then show pinyin and English without exposing the answer early. *(Flashcards)*
+70. A flashcard rating updates the existing spaced-repetition record and advances to the next saved word. *(Flashcards)*
+71. Anki export downloads a UTF-8 tab-separated file with Chinese fronts, formatted backs, source context, and no duplicate Chinese fronts. *(Anki export)*

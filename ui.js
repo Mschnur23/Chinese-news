@@ -746,8 +746,15 @@ export function renderAnalysis(article, analysis) {
     knownButton.type = "button";
     knownButton.dataset.knownTermIndex = String(index);
     knownButton.setAttribute("aria-label", `Mark ${term.termZh} as known`);
+    const frequencyScore = Number.isInteger(term.frequencyScore) ? term.frequencyScore : "—";
+    const frequency = createElement("span", "term-card__frequency");
+    frequency.title = "Estimated frequency in modern written Chinese";
+    frequency.append(
+      createElement("strong", "", String(frequencyScore)),
+      createElement("small", "", "Frequency / 100"),
+    );
     const actions = createElement("div", "term-card__actions");
-    actions.append(saveButton, knownButton);
+    actions.append(frequency, saveButton, knownButton);
     card.append(jumpButton, actions);
     termFragment.append(card);
   });

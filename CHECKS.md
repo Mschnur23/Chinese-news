@@ -74,3 +74,4 @@ Run this list after every phase. Record failures; never remove a previously pass
 70. A flashcard rating updates the existing spaced-repetition record and advances to the next saved word. *(Flashcards)*
 71. Anki export downloads a UTF-8 tab-separated file with Chinese fronts, formatted backs, source context, and no duplicate Chinese fronts. *(Anki export)*
 72. Article extraction prefers the largest responsive or original body image over social thumbnails, removes known publisher thumbnail transforms, and never invents an editorial image. *(Image quality)*
+73. Every suggested vocabulary term includes a validated 1–100 estimated modern written-Chinese frequency score, clearly distinguished from its occurrence count inside the article. *(Vocabulary frequency)*

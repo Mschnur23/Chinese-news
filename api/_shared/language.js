@@ -151,6 +151,13 @@ function validateModelString(value, field, maximumLength = 1200) {
   return value.trim();
 }
 
+function validateFrequencyScore(value) {
+  if (!Number.isInteger(value) || value < 1 || value > 100) {
+    throw new PublicError("MODEL_OUTPUT_INVALID", "The language guide contained an invalid frequency estimate. Please retry.", 502);
+  }
+  return value;
+}
+
 export function validateAnalysisOutput(value, article, expectedTermCount = 10, knownTerms = []) {
   if (!value || typeof value !== "object" || value.articleId !== article.id) {
     throw new PublicError("MODEL_OUTPUT_INVALID", "The language guide did not match this article. Please retry.", 502);
@@ -180,6 +187,7 @@ export function validateAnalysisOutput(value, article, expectedTermCount = 10, k
       termZh,
       pinyin: validateModelString(rawTerm.pinyin, "Pinyin", 160),
       meaningEn: validateModelString(rawTerm.meaningEn, "Meaning", 300),
+      frequencyScore: validateFrequencyScore(rawTerm.frequencyScore),
       exactOccurrence: termZh,
       contextSentenceZh: validateModelString(rawTerm.contextSentenceZh, "Context", 600),
     };
@@ -266,11 +274,12 @@ export function analysisSchemaForTermCount(termCount) {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["termZh", "pinyin", "meaningEn", "exactOccurrence", "contextSentenceZh"],
+          required: ["termZh", "pinyin", "meaningEn", "frequencyScore", "exactOccurrence", "contextSentenceZh"],
           properties: {
             termZh: { type: "string" },
             pinyin: { type: "string" },
             meaningEn: { type: "string" },
+            frequencyScore: { type: "integer", minimum: 1, maximum: 100 },
             exactOccurrence: { type: "string" },
             contextSentenceZh: { type: "string" },
           },

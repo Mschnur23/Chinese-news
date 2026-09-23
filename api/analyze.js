@@ -20,6 +20,7 @@ Choose exactly the requested number of unique Chinese words or phrases that are 
 Among level-appropriate difficult or useful candidates, prioritize terms with more exact occurrences in the article. Return terms in descending occurrence frequency; for ties, put the harder or more contextually useful term first. Never select an easy function word merely because it is frequent.
 For each term, termZh must be one vocabulary word or short lexical phrase, never a sentence or clause. Set exactOccurrence to exactly the same text as termZh. Copy both verbatim from the article, then copy the complete containing sentence into contextSentenceZh.
 Give tone-marked pinyin and a concise English meaning specific to that sentence.
+For frequencyScore, estimate the term's general frequency in modern written Chinese on an integer scale from 1 to 100. Use 90-100 for extremely common core/news vocabulary, 70-89 for common vocabulary, 40-69 for less common or domain-oriented vocabulary, and 1-39 for rare or highly specialized vocabulary. This is a broad usefulness signal, not the term's occurrence count in this article.
 Do not translate the full article or add outside facts.`;
 
 export default async function handler(request, response) {

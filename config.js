@@ -2,7 +2,7 @@ const previewMode = new URLSearchParams(globalThis.location?.search || "").get("
 
 export const config = Object.freeze({
   mode: previewMode ? "sample" : "live",
-  sampleDataPath: "./data/sample.json?v=phase5-library-1",
+  sampleDataPath: "./data/sample.json?v=frequency-score-1",
   apiRoutes: Object.freeze({
     articles: "/api/articles",
     article: "/api/article",

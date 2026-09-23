@@ -210,6 +210,8 @@ Phrases may count as single vocabulary items. Prefer useful phrases over splitti
 
 Among words that are genuinely difficult or useful for the selected level, prioritize terms that occur more frequently in the article. Use difficulty or contextual usefulness to break frequency ties. Do not select easy function words solely because they are frequent.
 
+Each suggested term also shows an estimated general frequency in modern written Chinese on a 1–100 scale. `100` means extremely common and `1` means highly specialized or rare. Label this as an estimate and keep it visually separate from the term's exact occurrence count inside the current article. Place the score beside the Save action so it helps the reader decide whether the term is broadly useful enough to keep.
+
 ## In-Article Vocabulary Highlighting
 
 Highlighted vocabulary should be subtle.

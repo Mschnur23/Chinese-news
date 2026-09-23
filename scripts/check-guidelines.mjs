@@ -214,11 +214,13 @@ const intermediateSchema = language.analysisSchemaForTermCount(20);
 const advancedSchema = language.analysisSchemaForTermCount(10);
 check(intermediateSchema.properties.terms.minItems === 20 && intermediateSchema.properties.terms.maxItems === 20, "Intermediate schema must require exactly 20 terms");
 check(advancedSchema.properties.terms.minItems === 10 && advancedSchema.properties.terms.maxItems === 10, "Advanced schema must require exactly 10 terms");
+check(advancedSchema.properties.terms.items.properties.frequencyScore.minimum === 1 && advancedSchema.properties.terms.items.properties.frequencyScore.maximum === 100, "Analysis schema must constrain general Chinese frequency estimates to 1-100");
 const sampleTermPool = sample.articleAnalysis?.terms || [];
 const sampleTerms = sampleTermPool.slice(0, 20);
 const sampleArticle = sample.articleDetails?.find((item) => item.id === sample.articleAnalysis?.articleId);
 check(sampleTermPool.length >= 25, "Sample analysis must contain replacement terms for known-word filtering");
 check(new Set(sampleTermPool.map((term) => term.termZh)).size === sampleTermPool.length, "Sample vocabulary pool terms must be unique");
+check(sampleTermPool.every((term) => Number.isInteger(term.frequencyScore) && term.frequencyScore >= 1 && term.frequencyScore <= 100), "Every sample vocabulary term must include a 1-100 frequency estimate");
 check(sampleTermPool.every((term) => sampleArticle?.bodyText.includes(term.termZh) && sampleArticle.bodyText.includes(term.exactOccurrence) && sampleArticle.bodyText.includes(term.contextSentenceZh)), "Every sample term must be grounded in the sample article");
 const sampleHelpTerms = new Set([...sampleTermPool, ...(sample.wordHelp || [])].map((term) => term.termZh));
 const sampleSegments = [...new Set(sampleArticle.paragraphs.flatMap((paragraph) => (
@@ -230,6 +232,7 @@ check(sampleSegments.every((term) => sampleHelpTerms.has(term)), "Every tappable
 const validationArticle = { ...sampleArticle, id: "the-paper:123" };
 const validationAnalysis = { ...sample.articleAnalysis, articleId: validationArticle.id, terms: sampleTerms };
 check(language.validateAnalysisOutput(validationAnalysis, validationArticle, 20).terms.length === 20, "Intermediate validator must accept exactly 20 grounded terms");
+check(language.validateAnalysisOutput(validationAnalysis, validationArticle, 20).terms.every((term) => Number.isInteger(term.frequencyScore)), "Analysis validator must preserve frequency estimates");
 check(language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.slice(0, 10) }, validationArticle, 10).terms.length === 10, "Advanced validator must accept exactly 10 grounded terms");
 const applicationTerm = sampleTerms.find((term) => term.termZh === "应用");
 const unsortedByFrequency = [...sampleTerms.filter((term) => term !== applicationTerm), applicationTerm];
@@ -243,9 +246,11 @@ check(wordOnlyAnalysis.terms.every((term) => term.exactOccurrence === term.termZ
 const analyzeEndpoint = await text("api/analyze.js");
 check(analyzeEndpoint.includes("Return terms in descending occurrence frequency"), "The analysis prompt must instruct the model to order terms by occurrence frequency");
 check(analyzeEndpoint.includes("Never select an easy function word merely because it is frequent"), "The analysis prompt must prevent frequency from promoting easy function words");
+check(analyzeEndpoint.includes("general frequency in modern written Chinese"), "The analysis prompt must distinguish general Chinese frequency from article occurrence frequency");
 check(analyzeEndpoint.includes("never a sentence or clause"), "The analysis prompt must prohibit sentence-length vocabulary highlights");
 const uiSource = await text("ui.js");
 check(uiSource.includes("exactOccurrence: term.termZh"), "The renderer must defensively highlight only the vocabulary term");
+check(uiSource.includes("Frequency / 100"), "The vocabulary renderer must label the general Chinese frequency estimate");
 let mismatchedTermCountRejected = false;
 try {
   language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.slice(0, 10) }, validationArticle, 20);
@@ -253,6 +258,13 @@ try {
   mismatchedTermCountRejected = true;
 }
 check(mismatchedTermCountRejected, "Intermediate validator must reject a response that does not contain 20 terms");
+let invalidFrequencyRejected = false;
+try {
+  language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.map((term, index) => index === 0 ? { ...term, frequencyScore: 101 } : term) }, validationArticle, 20);
+} catch {
+  invalidFrequencyRejected = true;
+}
+check(invalidFrequencyRejected, "Analysis validator must reject frequency estimates outside 1-100");
 let knownTermRejected = false;
 try {
   language.validateAnalysisOutput(validationAnalysis, validationArticle, 20, [sampleTerms[0].termZh]);

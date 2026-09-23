@@ -67,6 +67,7 @@ Its title, canonical URL, and normalized body determine its stable server-issued
     termZh: "string",
     pinyin: "string",
     meaningEn: "string",
+    frequencyScore: "integer from 1 to 100",
     exactOccurrence: "string",
     contextSentenceZh: "string"
   }]
@@ -75,7 +76,7 @@ Its title, canonical URL, and normalized body determine its stable server-issued
 
 `gistEn` contains exactly two non-empty sentences. `terms` contains exactly 20 unique entries for `Intermediate` and exactly 10 for `Advanced`. Every `termZh`, `exactOccurrence`, and `contextSentenceZh` must be present in the selected article.
 
-The model selects only level-appropriate difficult or useful candidates, then orders them by descending exact-occurrence frequency. Frequency must not promote easy function words. Equal-frequency terms remain in the model's difficulty/usefulness priority order. The server verifies grounding and normalizes the final frequency ordering before returning the analysis.
+The model selects only level-appropriate difficult or useful candidates, then orders them by descending exact-occurrence frequency. Frequency must not promote easy function words. Equal-frequency terms remain in the model's difficulty/usefulness priority order. The server verifies grounding and normalizes the final frequency ordering before returning the analysis. `frequencyScore` is a model-estimated general frequency in modern written Chinese: 100 is extremely common and 1 is highly specialized or rare. It is explicitly an estimate and is separate from occurrence frequency inside the selected article.
 
 ### Sentence explanation
 

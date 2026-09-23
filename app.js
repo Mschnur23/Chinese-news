@@ -1,5 +1,5 @@
-import { config } from "./config.js?v=collocations-1";
-import { source } from "./source.js?v=collocations-1";
+import { config } from "./config.js?v=image-fidelity-1";
+import { source } from "./source.js?v=image-fidelity-1";
 import { buildAnkiExport } from "./anki-export.js?v=collocations-1";
 import {
   clearResults,
@@ -96,7 +96,7 @@ import {
   revealReviewAnswer,
   downloadAnkiExport,
   showAnkiExportStatus,
-} from "./ui.js?v=collocations-1";
+} from "./ui.js?v=image-fidelity-1";
 
 let currentArticle = null;
 let articleRequestVersion = 0;

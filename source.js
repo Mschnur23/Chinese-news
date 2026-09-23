@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=collocations-1";
+import { config } from "./config.js?v=image-fidelity-1";
 import { driveSyncDocumentVersion, emptyDriveSyncMeta, mergeDriveSyncDocuments } from "./sync-data.js?v=drive-sync-1";
 
 let sampleCache;

@@ -32,7 +32,7 @@ export const config = Object.freeze({
   maximumSentenceCharacters: 500,
   requestTimeoutMs: 10000,
   analysisRequestTimeoutMs: 45000,
-  importRequestTimeoutMs: 25000,
+  importRequestTimeoutMs: 40000,
   relatedReadingRequestTimeoutMs: 45000,
   driveRequestTimeoutMs: 15000,
   googleIdentityScriptUrl: "https://accounts.google.com/gsi/client",

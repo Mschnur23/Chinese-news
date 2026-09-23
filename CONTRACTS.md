@@ -241,6 +241,8 @@ All browser network and persistence operations enter through `source.js`.
 
 External URLs, route paths, timeouts, result limits, and feature switches live only in `config.js` or the server-only `api/_shared/server-config.js`.
 
+The browser import timeout must remain longer than the server's Firecrawl provider timeout so the server can return a specific extraction error. Editorial images are measured after load and capped at `naturalWidth / devicePixelRatio`; smaller sources are centered and retain their natural aspect ratio instead of being stretched to fill an editorial slot.
+
 ### Learner levels
 
 Allowed values are `Intermediate` and `Advanced`.

@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=collocations-1";
+import { config } from "./config.js?v=image-fidelity-1";
 
 const elements = {
   body: document.body,
@@ -180,13 +180,20 @@ function createElement(tagName, className, text) {
 function createArticleImage(imageUrl, titleZh, className, { eager = false } = {}) {
   if (!imageUrl) return null;
   const image = createElement("img", className);
-  image.src = imageUrl;
   image.alt = titleZh ? `配图：${titleZh}` : "文章配图";
   image.loading = eager ? "eager" : "lazy";
   image.fetchPriority = eager ? "high" : "auto";
   image.decoding = "async";
   image.referrerPolicy = "no-referrer";
+  image.addEventListener("load", () => {
+    const density = Math.max(1, Number(window.devicePixelRatio) || 1);
+    const safeWidth = Math.max(1, Math.floor(image.naturalWidth / density));
+    image.style.setProperty("--source-safe-width", `${safeWidth}px`);
+    image.dataset.sourceResolution = `${image.naturalWidth}x${image.naturalHeight}`;
+    image.classList.add("article-image--resolution-capped");
+  }, { once: true });
   image.addEventListener("error", () => { image.hidden = true; }, { once: true });
+  image.src = imageUrl;
   return image;
 }
 

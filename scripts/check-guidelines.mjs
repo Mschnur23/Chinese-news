@@ -255,6 +255,8 @@ check(analyzeEndpoint.includes("never a sentence or clause"), "The analysis prom
 const uiSource = await text("ui.js");
 check(uiSource.includes("exactOccurrence: term.termZh"), "The renderer must defensively highlight only the vocabulary term");
 check(uiSource.includes("Estimated frequency in modern written Chinese"), "The vocabulary renderer must explain the standalone frequency number accessibly");
+check(uiSource.includes("image.naturalWidth / density") && uiSource.includes("article-image--resolution-capped"), "Editorial images must be capped to source resolution at the current display density");
+check(serverConfig.includes("importProviderTimeoutMs: 30000"), "Firecrawl must have at least 30 seconds to extract a public article");
 let mismatchedTermCountRejected = false;
 try {
   language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.slice(0, 10) }, validationArticle, 20);
@@ -374,6 +376,7 @@ const { config: checkedConfig } = await import(new URL("../config.js", import.me
 check(checkedConfig.analysisTermCounts.Intermediate === 20, "Browser config must map Intermediate to 20 terms");
 check(checkedConfig.analysisTermCounts.Advanced === 10, "Browser config must map Advanced to 10 terms");
 check(checkedConfig.googleDriveScope === "https://www.googleapis.com/auth/drive.appdata", "Drive sync must request only the app-data scope");
+check(checkedConfig.importRequestTimeoutMs > 30000, "The browser import timeout must outlast the Firecrawl provider timeout");
 const { source: checkedSource } = await import(new URL("../source.js", import.meta.url));
 const emptyLibrary = await checkedSource.librarySnapshot();
 check(emptyLibrary.records.length === 0 && emptyLibrary.articles.length === 0 && emptyLibrary.errors.length === 0, "Library snapshots must load all browser collections through one boundary");

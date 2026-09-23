@@ -158,6 +158,18 @@ function validateFrequencyScore(value) {
   return value;
 }
 
+function validateCollocations(value, termZh) {
+  if (!Array.isArray(value) || value.length < 2 || value.length > 3) {
+    throw new PublicError("MODEL_OUTPUT_INVALID", "The language guide contained invalid collocations. Please retry.", 502);
+  }
+  const collocations = value.map((item) => validateModelString(item, "Collocation", 80));
+  if (new Set(collocations.map((item) => normalized(item))).size !== collocations.length
+      || collocations.some((item) => !item.includes(termZh))) {
+    throw new PublicError("MODEL_OUTPUT_INVALID", "The language guide contained invalid collocations. Please retry.", 502);
+  }
+  return collocations;
+}
+
 export function validateAnalysisOutput(value, article, expectedTermCount = 10, knownTerms = []) {
   if (!value || typeof value !== "object" || value.articleId !== article.id) {
     throw new PublicError("MODEL_OUTPUT_INVALID", "The language guide did not match this article. Please retry.", 502);
@@ -188,6 +200,8 @@ export function validateAnalysisOutput(value, article, expectedTermCount = 10, k
       pinyin: validateModelString(rawTerm.pinyin, "Pinyin", 160),
       meaningEn: validateModelString(rawTerm.meaningEn, "Meaning", 300),
       frequencyScore: validateFrequencyScore(rawTerm.frequencyScore),
+      collocations: validateCollocations(rawTerm.collocations, termZh),
+      usageNote: validateModelString(rawTerm.usageNote, "Usage note", 180),
       exactOccurrence: termZh,
       contextSentenceZh: validateModelString(rawTerm.contextSentenceZh, "Context", 600),
     };
@@ -274,12 +288,14 @@ export function analysisSchemaForTermCount(termCount) {
         items: {
           type: "object",
           additionalProperties: false,
-          required: ["termZh", "pinyin", "meaningEn", "frequencyScore", "exactOccurrence", "contextSentenceZh"],
+          required: ["termZh", "pinyin", "meaningEn", "frequencyScore", "collocations", "usageNote", "exactOccurrence", "contextSentenceZh"],
           properties: {
             termZh: { type: "string" },
             pinyin: { type: "string" },
             meaningEn: { type: "string" },
             frequencyScore: { type: "integer", minimum: 1, maximum: 100 },
+            collocations: { type: "array", minItems: 2, maxItems: 3, items: { type: "string" } },
+            usageNote: { type: "string" },
             exactOccurrence: { type: "string" },
             contextSentenceZh: { type: "string" },
           },

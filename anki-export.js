@@ -31,6 +31,10 @@ export function buildAnkiExport(records) {
 
     const pinyin = escapeHtml(record.pinyin);
     const meaning = escapeHtml(record.meaningEn);
+    const usageNote = escapeHtml(record.usageNote);
+    const collocations = Array.isArray(record.collocations)
+      ? record.collocations.map(escapeHtml).filter(Boolean).join(" · ")
+      : "";
     const context = escapeHtml(record.contextSentenceZh);
     const article = escapeHtml(record.articleTitleZh);
     const source = escapeHtml(record.sourceName);
@@ -38,6 +42,8 @@ export function buildAnkiExport(records) {
     const back = [
       pinyin ? `<div class="pinyin">${pinyin}</div>` : "",
       meaning ? `<div class="meaning">${meaning}</div>` : "",
+      usageNote ? `<div class="usage">${usageNote}</div>` : "",
+      collocations ? `<div class="collocations">${collocations}</div>` : "",
       context ? `<hr><div class="context">${context}</div>` : "",
       article || source || url
         ? `<div class="source">${[article, source].filter(Boolean).join(" · ")}${url ? ` · <a href="${url}">Original article</a>` : ""}</div>`

@@ -1,6 +1,6 @@
-import { config } from "./config.js?v=frequency-score-1";
-import { source } from "./source.js?v=frequency-score-1";
-import { buildAnkiExport } from "./anki-export.js?v=flashcards-2";
+import { config } from "./config.js?v=collocations-1";
+import { source } from "./source.js?v=collocations-1";
+import { buildAnkiExport } from "./anki-export.js?v=collocations-1";
 import {
   clearResults,
   clearReader,
@@ -96,7 +96,7 @@ import {
   revealReviewAnswer,
   downloadAnkiExport,
   showAnkiExportStatus,
-} from "./ui.js?v=frequency-score-2";
+} from "./ui.js?v=collocations-1";
 
 let currentArticle = null;
 let articleRequestVersion = 0;
@@ -412,6 +412,8 @@ function vocabularyRecord(article, term) {
     termZh: term.termZh,
     pinyin: term.pinyin,
     meaningEn: term.meaningEn,
+    collocations: term.collocations,
+    usageNote: term.usageNote,
     contextSentenceZh: term.contextSentenceZh,
     articleId: article.id,
     articleTitleZh: article.titleZh,

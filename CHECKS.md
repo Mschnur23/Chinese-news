@@ -75,3 +75,4 @@ Run this list after every phase. Record failures; never remove a previously pass
 71. Anki export downloads a UTF-8 tab-separated file with Chinese fronts, formatted backs, source context, and no duplicate Chinese fronts. *(Anki export)*
 72. Article extraction prefers the largest responsive or original body image over social thumbnails, removes known publisher thumbnail transforms, and never invents an editorial image. *(Image quality)*
 73. Every suggested vocabulary term includes a validated 1–100 estimated modern written-Chinese frequency score, clearly distinguished from its occurrence count inside the article. *(Vocabulary frequency)*
+74. Every new suggested vocabulary term includes two or three validated natural collocations and a concise usage note; both persist through saved words, Drive sync, flashcards, and Anki export while older saved records remain readable. *(Vocabulary usage)*

@@ -15,6 +15,8 @@ test("Anki export creates Chinese-front cards with escaped contextual backs", ()
       termZh: "案例",
       pinyin: "àn lì",
       meaningEn: "case <law>",
+      usageNote: "formal legal Chinese",
+      collocations: ["典型案例", "案例分析"],
       contextSentenceZh: "这是一个案例。",
       articleTitleZh: "法治观察",
       sourceName: "界面 新闻",
@@ -23,6 +25,7 @@ test("Anki export creates Chinese-front cards with escaped contextual backs", ()
   ]);
   assert.match(file, /#columns:Chinese\tEnglish\tTags/);
   assert.match(file, /案例\t<div class="pinyin">àn lì<\/div><div class="meaning">case &lt;law&gt;<\/div>/);
+  assert.match(file, /<div class="usage">formal legal Chinese<\/div><div class="collocations">典型案例 · 案例分析<\/div>/);
   assert.match(file, /daily_chinese_read source::界面_新闻/);
   assert.equal(file.split("\n").filter((line) => line.startsWith("案例\t")).length, 1);
 });

@@ -731,6 +731,15 @@ body[data-busy="true"] .article-grid { opacity: 0.45; }
 .term-card__zh { grid-row: 1 / 3; font-family: var(--display); font-size: 1.2rem; }
 .term-card__pinyin { color: var(--accent-dark); font-size: 0.78rem; }
 .term-card__meaning { color: var(--ink-soft); font-size: 0.82rem; }
+.term-card__usage,
+.term-card__collocations {
+  grid-column: 1 / -1;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+.term-card__usage { margin-top: 0.35rem; font-style: italic; }
+.term-card__collocations { color: var(--ink); font-family: var(--reading); font-style: normal; }
 
 .term-highlight {
   position: relative;
@@ -919,6 +928,8 @@ body[data-busy="true"] .article-grid { opacity: 0.45; }
 .vocabulary-card__term { margin-bottom: 0.35rem; font-family: var(--display); font-size: 2rem; font-weight: 600; }
 .vocabulary-card__pinyin { margin-bottom: 0; color: var(--accent-dark); }
 .vocabulary-card__meaning { font-weight: 750; }
+.vocabulary-card__usage { margin: -0.35rem 0 0.7rem; color: var(--ink-soft); font-size: 0.8rem; font-style: italic; }
+.vocabulary-card__collocations { margin: 0 0 1rem; font-family: var(--reading); font-size: 0.95rem; }
 .vocabulary-card__context { margin: 1.25rem 0; padding-left: 1rem; border-left: 3px solid var(--accent); font-family: var(--display); line-height: 1.7; }
 .vocabulary-card__article { margin-bottom: 0.35rem; font-family: var(--display); font-weight: 700; }
 .vocabulary-card__meta { color: var(--ink-soft); font-size: 0.78rem; line-height: 1.5; }
@@ -1245,6 +1256,8 @@ select { border-color: var(--border); border-radius: 10px; }
 .flashcard__back { display: grid; gap: 0.65rem; width: min(30rem, 70vw); margin-top: 2.25rem; padding-top: 2rem; border-top: 1px solid var(--text-primary); }
 .flashcard__back #review-pinyin { color: var(--accent); font-size: clamp(1.15rem, 3vw, 1.5rem); }
 .flashcard__back #review-meaning { font-family: var(--display); font-size: clamp(1.35rem, 4vw, 2rem); line-height: 1.35; }
+.flashcard__back #review-usage-note { color: #aaa; font-size: 0.78rem; font-style: italic; }
+.flashcard__back #review-collocations { margin-top: 0.35rem; font-family: var(--reading); font-size: clamp(1rem, 2.5vw, 1.25rem); line-height: 1.6; }
 .review-ratings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-top: 1rem; }
 .review-ratings button { min-height: 44px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; }
 .review-ratings button:hover { border-color: var(--accent); color: var(--accent); }

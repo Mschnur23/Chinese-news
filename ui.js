@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=drive-sync-1";
+import { config } from "./config.js?v=collocations-1";
 
 const elements = {
   body: document.body,
@@ -92,6 +92,8 @@ const elements = {
   reviewRatings: document.querySelector("#review-ratings"),
   reviewPinyin: document.querySelector("#review-pinyin"),
   reviewMeaning: document.querySelector("#review-meaning"),
+  reviewUsageNote: document.querySelector("#review-usage-note"),
+  reviewCollocations: document.querySelector("#review-collocations"),
   reviewExit: document.querySelector("#review-exit"),
   knownWords: document.querySelector("#known-words"),
   knownWordsList: document.querySelector("#known-words-list"),
@@ -737,6 +739,8 @@ export function renderAnalysis(article, analysis) {
       createElement("strong", "term-card__zh", term.termZh),
       createElement("span", "term-card__pinyin", term.pinyin),
       createElement("span", "term-card__meaning", term.meaningEn),
+      createElement("span", "term-card__usage", term.usageNote),
+      createElement("span", "term-card__collocations", term.collocations.join(" · ")),
     );
     const saveButton = createElement("button", "term-card__save", "Save term");
     saveButton.type = "button";
@@ -1165,6 +1169,10 @@ export function renderReviewCard(record, position, total) {
   elements.reviewContext.textContent = record.contextSentenceZh;
   elements.reviewPinyin.textContent = record.pinyin;
   elements.reviewMeaning.textContent = record.meaningEn;
+  elements.reviewUsageNote.textContent = record.usageNote || "";
+  elements.reviewUsageNote.hidden = !record.usageNote;
+  elements.reviewCollocations.textContent = record.collocations?.length ? record.collocations.join(" · ") : "";
+  elements.reviewCollocations.hidden = !record.collocations?.length;
   elements.reviewAnswer.hidden = true;
   elements.reviewRatings.hidden = true;
   elements.reviewReveal.setAttribute("aria-expanded", "false");
@@ -1242,6 +1250,10 @@ export function renderVocabulary(records) {
     const pinyin = createElement("p", "vocabulary-card__pinyin", record.pinyin || "Pinyin unavailable");
     heading.append(term, pinyin);
     const meaning = createElement("p", "vocabulary-card__meaning", record.meaningEn || "Meaning unavailable");
+    const usage = record.usageNote ? createElement("p", "vocabulary-card__usage", record.usageNote) : null;
+    const collocations = record.collocations?.length
+      ? createElement("p", "vocabulary-card__collocations", record.collocations.join(" · "))
+      : null;
     const context = createElement("blockquote", "vocabulary-card__context", record.contextSentenceZh || "Context unavailable");
     const articleTitle = createElement("p", "vocabulary-card__article", record.articleTitleZh || "Article title unavailable");
     const metadata = createElement("p", "vocabulary-card__meta", [
@@ -1265,7 +1277,7 @@ export function renderVocabulary(records) {
     known.dataset.vocabularyKnown = record.termZh;
     known.setAttribute("aria-label", `Mark ${record.termZh || "this term"} as known`);
     actions.append(...[original, known, remove].filter(Boolean));
-    card.append(heading, meaning, context, articleTitle, metadata, actions);
+    card.append(heading, meaning, ...[usage, collocations].filter(Boolean), context, articleTitle, metadata, actions);
     fragment.append(card);
   });
   elements.vocabularyList.replaceChildren(fragment);

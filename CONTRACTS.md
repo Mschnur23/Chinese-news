@@ -68,6 +68,8 @@ Its title, canonical URL, and normalized body determine its stable server-issued
     pinyin: "string",
     meaningEn: "string",
     frequencyScore: "integer from 1 to 100",
+    collocations: ["two or three strings containing termZh"],
+    usageNote: "brief English register/domain note",
     exactOccurrence: "string",
     contextSentenceZh: "string"
   }]
@@ -76,7 +78,7 @@ Its title, canonical URL, and normalized body determine its stable server-issued
 
 `gistEn` contains exactly two non-empty sentences. `terms` contains exactly 20 unique entries for `Intermediate` and exactly 10 for `Advanced`. Every `termZh`, `exactOccurrence`, and `contextSentenceZh` must be present in the selected article.
 
-The model selects only level-appropriate difficult or useful candidates, then orders them by descending exact-occurrence frequency. Frequency must not promote easy function words. Equal-frequency terms remain in the model's difficulty/usefulness priority order. The server verifies grounding and normalizes the final frequency ordering before returning the analysis. `frequencyScore` is a model-estimated general frequency in modern written Chinese: 100 is extremely common and 1 is highly specialized or rare. It is explicitly an estimate and is separate from occurrence frequency inside the selected article.
+The model selects only level-appropriate difficult or useful candidates, then orders them by descending exact-occurrence frequency. Frequency must not promote easy function words. Equal-frequency terms remain in the model's difficulty/usefulness priority order. The server verifies grounding and normalizes the final frequency ordering before returning the analysis. `frequencyScore` is a model-estimated general frequency in modern written Chinese: 100 is extremely common and 1 is highly specialized or rare. It is explicitly an estimate and is separate from occurrence frequency inside the selected article. Every term also has two or three short, natural collocations containing the exact term and a concise English `usageNote` describing register, domain, or both.
 
 ### Sentence explanation
 
@@ -96,6 +98,8 @@ The model selects only level-appropriate difficult or useful candidates, then or
   termZh: "string",
   pinyin: "string",
   meaningEn: "string",
+  collocations: ["string"],
+  usageNote: "string",
   contextSentenceZh: "string",
   articleId: "string",
   articleTitleZh: "string",
@@ -113,7 +117,7 @@ The model selects only level-appropriate difficult or useful candidates, then or
 
 Vocabulary identity is deterministic: normalized `termZh + articleId + contextSentenceZh`. Array position is never part of identity.
 
-Older records without review fields are read as new cards due at `savedAt`. Ratings schedule the next review locally: Again returns the card in 10 minutes, Good advances one interval, and Easy advances two intervals.
+Older records without review fields are read as new cards due at `savedAt`. Older records without `collocations` or `usageNote` normalize those fields to `[]` and `""`. Ratings schedule the next review locally: Again returns the card in 10 minutes, Good advances one interval, and Easy advances two intervals.
 
 ### Known word
 
@@ -317,6 +321,6 @@ This replaces the Phase 0 `yicai` identifier and migrates the source set from tw
 ### Flashcards and Anki export
 
 - Flashcards use the existing `VocabularyRecord` collection and `source.review()` scheduling boundary. They add no second progress store.
-- The unrevealed face contains only `termZh`. Revealing it shows `pinyin` and `meaningEn`; Again, Good, and Easy update the existing review record.
-- Anki export is a local UTF-8 tab-separated download. It contains a Chinese front, an HTML back with pinyin, meaning, bounded source context, and tags. It makes no network request and exports no review schedule, token, credential, or full article body.
+- The unrevealed face contains only `termZh`. Revealing it shows `pinyin`, `meaningEn`, `usageNote`, and `collocations`; Again, Good, and Easy update the existing review record.
+- Anki export is a local UTF-8 tab-separated download. It contains a Chinese front, an HTML back with pinyin, meaning, usage note, collocations, bounded source context, and tags. It makes no network request and exports no review schedule, token, credential, or full article body.
 - Additive DOM IDs are `export-anki`, `review-export-status`, and `review-ratings`.

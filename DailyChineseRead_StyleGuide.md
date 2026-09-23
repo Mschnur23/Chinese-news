@@ -212,6 +212,8 @@ Among words that are genuinely difficult or useful for the selected level, prior
 
 Each suggested term also shows an estimated general frequency in modern written Chinese on a 1–100 scale. `100` means extremely common and `1` means highly specialized or rare. Label this as an estimate and keep it visually separate from the term's exact occurrence count inside the current article. Place the score beside the Save action so it helps the reader decide whether the term is broadly useful enough to keep.
 
+Each term should also teach usage rather than translation alone. Show two or three compact, natural collocations containing the exact term, followed by one restrained English note identifying its register or domain. Keep both secondary to the term and definition; they should read like editorial marginalia, not another dashboard metric.
+
 ## In-Article Vocabulary Highlighting
 
 Highlighted vocabulary should be subtle.

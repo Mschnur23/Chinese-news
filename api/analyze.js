@@ -21,6 +21,8 @@ Among level-appropriate difficult or useful candidates, prioritize terms with mo
 For each term, termZh must be one vocabulary word or short lexical phrase, never a sentence or clause. Set exactOccurrence to exactly the same text as termZh. Copy both verbatim from the article, then copy the complete containing sentence into contextSentenceZh.
 Give tone-marked pinyin and a concise English meaning specific to that sentence.
 For frequencyScore, estimate the term's general frequency in modern written Chinese on an integer scale from 1 to 100. Use 90-100 for extremely common core/news vocabulary, 70-89 for common vocabulary, 40-69 for less common or domain-oriented vocabulary, and 1-39 for rare or highly specialized vocabulary. This is a broad usefulness signal, not the term's occurrence count in this article.
+For every term, provide two or three short, natural modern-Chinese collocations. Each collocation must contain termZh exactly. Use common combinations, not invented example sentences.
+Also provide a brief English usageNote identifying register, domain, or both (for example, "formal written Chinese · policy and business"). Keep it to about ten words or fewer.
 Do not translate the full article or add outside facts.`;
 
 export default async function handler(request, response) {
@@ -41,7 +43,7 @@ export default async function handler(request, response) {
       instructions,
       schema: analysisSchemaForTermCount(termCount),
       schemaName: "article_language_guide",
-      maxOutputTokens: termCount === 20 ? 5500 : 3500,
+      maxOutputTokens: termCount === 20 ? 6500 : 4300,
       input: `Analyze this article for a ${learnerLevel} Mandarin learner. Return exactly ${termCount} vocabulary terms. Interests: ${interests.join(", ") || "general current affairs"}.\n<untrusted_known_terms_json>\n${JSON.stringify(knownTerms)}\n</untrusted_known_terms_json>\n<untrusted_article_json>\n${JSON.stringify(article)}\n</untrusted_article_json>`,
     });
     const analysis = validateAnalysisOutput(modelOutput, article, termCount, knownTerms);

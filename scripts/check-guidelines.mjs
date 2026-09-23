@@ -215,12 +215,15 @@ const advancedSchema = language.analysisSchemaForTermCount(10);
 check(intermediateSchema.properties.terms.minItems === 20 && intermediateSchema.properties.terms.maxItems === 20, "Intermediate schema must require exactly 20 terms");
 check(advancedSchema.properties.terms.minItems === 10 && advancedSchema.properties.terms.maxItems === 10, "Advanced schema must require exactly 10 terms");
 check(advancedSchema.properties.terms.items.properties.frequencyScore.minimum === 1 && advancedSchema.properties.terms.items.properties.frequencyScore.maximum === 100, "Analysis schema must constrain general Chinese frequency estimates to 1-100");
+check(advancedSchema.properties.terms.items.properties.collocations.minItems === 2 && advancedSchema.properties.terms.items.properties.collocations.maxItems === 3, "Analysis schema must require two or three collocations per term");
 const sampleTermPool = sample.articleAnalysis?.terms || [];
 const sampleTerms = sampleTermPool.slice(0, 20);
 const sampleArticle = sample.articleDetails?.find((item) => item.id === sample.articleAnalysis?.articleId);
 check(sampleTermPool.length >= 25, "Sample analysis must contain replacement terms for known-word filtering");
 check(new Set(sampleTermPool.map((term) => term.termZh)).size === sampleTermPool.length, "Sample vocabulary pool terms must be unique");
 check(sampleTermPool.every((term) => Number.isInteger(term.frequencyScore) && term.frequencyScore >= 1 && term.frequencyScore <= 100), "Every sample vocabulary term must include a 1-100 frequency estimate");
+check(sampleTermPool.every((term) => Array.isArray(term.collocations) && term.collocations.length >= 2 && term.collocations.length <= 3 && term.collocations.every((item) => item.includes(term.termZh))), "Every sample term must include two or three collocations containing the term");
+check(sampleTermPool.every((term) => typeof term.usageNote === "string" && term.usageNote.trim()), "Every sample term must include a concise usage note");
 check(sampleTermPool.every((term) => sampleArticle?.bodyText.includes(term.termZh) && sampleArticle.bodyText.includes(term.exactOccurrence) && sampleArticle.bodyText.includes(term.contextSentenceZh)), "Every sample term must be grounded in the sample article");
 const sampleHelpTerms = new Set([...sampleTermPool, ...(sample.wordHelp || [])].map((term) => term.termZh));
 const sampleSegments = [...new Set(sampleArticle.paragraphs.flatMap((paragraph) => (
@@ -233,6 +236,7 @@ const validationArticle = { ...sampleArticle, id: "the-paper:123" };
 const validationAnalysis = { ...sample.articleAnalysis, articleId: validationArticle.id, terms: sampleTerms };
 check(language.validateAnalysisOutput(validationAnalysis, validationArticle, 20).terms.length === 20, "Intermediate validator must accept exactly 20 grounded terms");
 check(language.validateAnalysisOutput(validationAnalysis, validationArticle, 20).terms.every((term) => Number.isInteger(term.frequencyScore)), "Analysis validator must preserve frequency estimates");
+check(language.validateAnalysisOutput(validationAnalysis, validationArticle, 20).terms.every((term) => term.collocations.length >= 2 && term.usageNote), "Analysis validator must preserve collocations and usage notes");
 check(language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.slice(0, 10) }, validationArticle, 10).terms.length === 10, "Advanced validator must accept exactly 10 grounded terms");
 const applicationTerm = sampleTerms.find((term) => term.termZh === "应用");
 const unsortedByFrequency = [...sampleTerms.filter((term) => term !== applicationTerm), applicationTerm];
@@ -265,6 +269,13 @@ try {
   invalidFrequencyRejected = true;
 }
 check(invalidFrequencyRejected, "Analysis validator must reject frequency estimates outside 1-100");
+let invalidCollocationsRejected = false;
+try {
+  language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.map((term, index) => index === 0 ? { ...term, collocations: ["unrelated phrase"] } : term) }, validationArticle, 20);
+} catch {
+  invalidCollocationsRejected = true;
+}
+check(invalidCollocationsRejected, "Analysis validator must reject missing, repeated, or ungrounded collocations");
 let knownTermRejected = false;
 try {
   language.validateAnalysisOutput(validationAnalysis, validationArticle, 20, [sampleTerms[0].termZh]);
@@ -369,8 +380,9 @@ check(emptyLibrary.records.length === 0 && emptyLibrary.articles.length === 0 &&
 const firstSave = await checkedSource.save(sample.vocabularyRecord);
 const duplicateSave = await checkedSource.save(sample.vocabularyRecord);
 check(firstSave.added && firstSave.records.length === 1, "First vocabulary save must create one complete record");
-const vocabularyKeys = ["id", "termZh", "pinyin", "meaningEn", "contextSentenceZh", "articleId", "articleTitleZh", "sourceName", "canonicalUrl", "publishedAt", "savedAt", "reviewStage", "reviewDueAt", "lastReviewedAt", "reviewCount", "lapseCount"];
+const vocabularyKeys = ["id", "termZh", "pinyin", "meaningEn", "collocations", "usageNote", "contextSentenceZh", "articleId", "articleTitleZh", "sourceName", "canonicalUrl", "publishedAt", "savedAt", "reviewStage", "reviewDueAt", "lastReviewedAt", "reviewCount", "lapseCount"];
 check(vocabularyKeys.every((key) => Object.hasOwn(firstSave.record, key)), "Saved vocabulary records must contain every contracted key");
+check(firstSave.record.collocations.length === 3 && firstSave.record.usageNote.includes("formal"), "Saved vocabulary records must preserve collocations and usage notes");
 check(!duplicateSave.added && duplicateSave.records.length === 1, "Duplicate vocabulary save must not create a second record");
 check((await checkedSource.reviewQueue()).length === 1, "A newly saved word must be immediately available in the review queue");
 const reviewed = await checkedSource.review(firstSave.record.id, "good", "2026-09-13T10:00:00+08:00");

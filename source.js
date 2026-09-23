@@ -1,4 +1,4 @@
-import { config } from "./config.js?v=frequency-score-1";
+import { config } from "./config.js?v=collocations-1";
 import { driveSyncDocumentVersion, emptyDriveSyncMeta, mergeDriveSyncDocuments } from "./sync-data.js?v=drive-sync-1";
 
 let sampleCache;
@@ -85,6 +85,21 @@ function nonNegativeInteger(value, fallback = 0) {
   return Number.isInteger(value) && value >= 0 ? value : fallback;
 }
 
+function optionalText(value, maximumLength = 180) {
+  if (value === undefined || value === null || value === "") return "";
+  const text = requiredText(value);
+  if (text.length > maximumLength) throw storageError();
+  return text;
+}
+
+function normalizeCollocations(value) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value) || value.length > 3) throw storageError();
+  const collocations = value.map((item) => optionalText(item, 80));
+  if (collocations.some((item) => !item) || new Set(collocations).size !== collocations.length) throw storageError();
+  return collocations;
+}
+
 function normalizeVocabularyRecord(value, options = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw storageError();
   const savedAt = options.forSave ? new Date().toISOString() : validDate(value.savedAt);
@@ -93,6 +108,8 @@ function normalizeVocabularyRecord(value, options = {}) {
     termZh: requiredText(value.termZh),
     pinyin: requiredText(value.pinyin),
     meaningEn: requiredText(value.meaningEn),
+    collocations: normalizeCollocations(value.collocations),
+    usageNote: optionalText(value.usageNote),
     contextSentenceZh: requiredText(value.contextSentenceZh),
     articleId: requiredText(value.articleId),
     articleTitleZh: requiredText(value.articleTitleZh),

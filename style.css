@@ -1115,28 +1115,14 @@ select { border-color: var(--border); border-radius: 10px; }
 }
 .term-card__actions .term-card__save { margin: 0; }
 .term-card__frequency {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.35rem;
-  align-items: baseline;
+  align-self: center;
   color: var(--text-secondary);
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
   white-space: nowrap;
-}
-.term-card__frequency strong {
-  color: var(--text-primary);
-  font-family: var(--display);
-  font-size: 1.45rem;
-  font-weight: 500;
-  line-height: 1;
-}
-.term-card__frequency small {
-  max-width: 4.5rem;
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  line-height: 1.15;
-  text-transform: uppercase;
-  white-space: normal;
 }
 .term-card__known {
   min-height: 32px;
@@ -1315,7 +1301,7 @@ footer { max-width: 850px; border-color: var(--border); }
   .term-card__save { justify-self: start; margin: 0 0.75rem 0.75rem; }
   .term-card__actions { grid-template-columns: 1fr 1fr; padding-left: 0.5rem; }
   .term-card__actions .term-card__save { justify-self: stretch; margin: 0; }
-  .term-card__frequency { grid-column: 1 / -1; }
+  .term-card__frequency { grid-column: 1 / -1; justify-self: end; }
   .word-help { width: min(20rem, calc(100vw - 1.5rem)); }
   .review-summary, .known-words, .drive-sync { align-items: stretch; flex-direction: column; }
   .review-summary__actions { align-items: stretch; flex-direction: column-reverse; }

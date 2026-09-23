@@ -96,7 +96,7 @@ import {
   revealReviewAnswer,
   downloadAnkiExport,
   showAnkiExportStatus,
-} from "./ui.js?v=frequency-score-1";
+} from "./ui.js?v=frequency-score-2";
 
 let currentArticle = null;
 let articleRequestVersion = 0;

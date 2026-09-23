@@ -250,7 +250,7 @@ check(analyzeEndpoint.includes("general frequency in modern written Chinese"), "
 check(analyzeEndpoint.includes("never a sentence or clause"), "The analysis prompt must prohibit sentence-length vocabulary highlights");
 const uiSource = await text("ui.js");
 check(uiSource.includes("exactOccurrence: term.termZh"), "The renderer must defensively highlight only the vocabulary term");
-check(uiSource.includes("Frequency / 100"), "The vocabulary renderer must label the general Chinese frequency estimate");
+check(uiSource.includes("Estimated frequency in modern written Chinese"), "The vocabulary renderer must explain the standalone frequency number accessibly");
 let mismatchedTermCountRejected = false;
 try {
   language.validateAnalysisOutput({ ...validationAnalysis, terms: sampleTerms.slice(0, 10) }, validationArticle, 20);

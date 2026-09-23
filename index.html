@@ -4,11 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="A focused reader for advanced Mandarin learners.">
-    <meta name="theme-color" content="#f1eee5">
+    <meta name="theme-color" content="#1b1916">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23102b2b'/%3E%3Cpath d='M18 18h28v7H35v21h-7V25H18z' fill='%23f3e9d2'/%3E%3Ccircle cx='45' cy='43' r='6' fill='%23e05a3f'/%3E%3C/svg%3E">
     <title>Daily Chinese Read</title>
-    <link rel="stylesheet" href="./style.css?v=editorial-2">
-    <script type="module" src="./app.js?v=editorial-2"></script>
+    <link rel="stylesheet" href="./style.css?v=flashcards-2">
+    <script type="module" src="./app.js?v=flashcards-2"></script>
   </head>
   <body>
     <a class="skip-link" href="#article-list">Skip to articles</a>
@@ -16,13 +16,13 @@
       <a class="wordmark" href="./" aria-label="Daily Chinese Read home">
         <span class="wordmark__mark" aria-hidden="true">读</span>
         <span class="wordmark__copy">
-          <strong>中文读本</strong>
-          <small>Daily Chinese Read</small>
+          <strong>Daily Chinese Read</strong>
+          <small>Real stories. Real Chinese. A sharper you.</small>
         </span>
       </a>
       <div class="header-actions">
         <button class="vocabulary-link" id="open-vocabulary" type="button" aria-expanded="false">
-          词库 <span id="vocabulary-count" aria-label="0 saved terms">0</span>
+          My Words <span id="vocabulary-count" aria-label="0 saved terms">0</span>
         </button>
       </div>
     </header>
@@ -31,15 +31,15 @@
       <section class="intro" id="home-intro" aria-labelledby="page-title">
         <div>
           <p class="eyebrow">本周选读 · 9月13日</p>
-          <h1 id="page-title">值得读的<br>中文报道</h1>
+          <h1 id="page-title">今日中文报道</h1>
         </div>
-        <p class="intro__copy">三家中文媒体，一组认真挑选的原文。先读报道，再留下真正有用的词。</p>
+        <p class="intro__copy">来自澎湃新闻、证券时报和界面新闻。原文阅读，必要处提供词汇和句子提示。</p>
       </section>
 
       <section class="controls" id="reading-controls" aria-label="Reading controls">
         <div class="controls__actions">
-          <button class="primary-button" id="load-reading" type="button">更新本期选读</button>
-          <button class="secondary-button" id="open-import" type="button">导入自己的文章</button>
+          <button class="primary-button" id="load-reading" type="button">查看今日文章</button>
+          <button class="secondary-button" id="open-import" type="button">Use your own article</button>
         </div>
         <label class="state-control" id="preview-state-control" for="preview-state" hidden>
           Preview state

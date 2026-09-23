@@ -73,3 +73,4 @@ Run this list after every phase. Record failures; never remove a previously pass
 69. Flashcards show only the Chinese term before reveal, then show pinyin and English without exposing the answer early. *(Flashcards)*
 70. A flashcard rating updates the existing spaced-repetition record and advances to the next saved word. *(Flashcards)*
 71. Anki export downloads a UTF-8 tab-separated file with Chinese fronts, formatted backs, source context, and no duplicate Chinese fronts. *(Anki export)*
+72. Article extraction prefers the largest responsive or original body image over social thumbnails, removes known publisher thumbnail transforms, and never invents an editorial image. *(Image quality)*

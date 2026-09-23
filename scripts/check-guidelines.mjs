@@ -202,6 +202,8 @@ check(htmlHelpers.extractImageUrl('<img data-src="https://images.example.test/le
 check(htmlHelpers.extractImageUrl('<meta property="og:image" content="https://images.example.test/social.jpg">', "https://example.test/") === "https://images.example.test/social.jpg", "Lead-image extraction must support Open Graph metadata");
 check(htmlHelpers.extractImageUrl('<img srcset="https://images.example.test/lead-480.jpg 480w, https://images.example.test/lead-1920.jpg 1920w">', "https://example.test/") === "https://images.example.test/lead-1920.jpg", "Lead-image extraction must prefer the largest responsive image candidate");
 check(htmlHelpers.normalizeImageUrl("https://imgpai.thepaper.cn/lead.jpg?x-oss-process=image/resize,w_640") === "https://imgpai.thepaper.cn/lead.jpg", "Publisher thumbnail transforms must be removed to retain original resolution");
+check(htmlHelpers.extractImageUrl('<meta property="og:image" content="https://images.example.test/social-640.jpg"><img srcset="https://images.example.test/lead-960.jpg 960w, https://images.example.test/lead-2400.jpg 2400w">', "https://example.test/") === "https://images.example.test/lead-2400.jpg", "Responsive article images must take priority over smaller social thumbnails");
+check(htmlHelpers.normalizeImageUrl("https://images.example.test/lead.jpg?imageView2/2/w/640") === "https://images.example.test/lead.jpg", "Qiniu thumbnail transforms must be removed to retain the original asset");
 check(htmlHelpers.normalizeImageUrl("http://images.example.test/insecure.jpg", "https://example.test/") === "", "Article images must reject non-HTTPS URLs");
 
 const language = await import(new URL("../api/_shared/language.js", import.meta.url));

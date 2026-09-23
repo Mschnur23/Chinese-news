@@ -175,12 +175,13 @@ function createElement(tagName, className, text) {
   return element;
 }
 
-function createArticleImage(imageUrl, titleZh, className) {
+function createArticleImage(imageUrl, titleZh, className, { eager = false } = {}) {
   if (!imageUrl) return null;
   const image = createElement("img", className);
   image.src = imageUrl;
   image.alt = titleZh ? `配图：${titleZh}` : "文章配图";
-  image.loading = "lazy";
+  image.loading = eager ? "eager" : "lazy";
+  image.fetchPriority = eager ? "high" : "auto";
   image.decoding = "async";
   image.referrerPolicy = "no-referrer";
   image.addEventListener("error", () => { image.hidden = true; }, { once: true });
@@ -418,7 +419,7 @@ export function renderList(items) {
 
   items.forEach((item, index) => {
     const article = createElement("article", "article-card");
-    const image = createArticleImage(item.imageUrl, item.titleZh, "article-card__image");
+    const image = createArticleImage(item.imageUrl, item.titleZh, "article-card__image", { eager: index === 0 });
     const topLine = createElement("div", "article-card__topline");
     const source = createElement("span", "source-label", item.sourceName || "Source unavailable");
     const date = createElement("time", "article-time", formatPublicationDate(item.publishedAt));
@@ -521,7 +522,7 @@ export function renderArticle(article) {
   }
   header.append(...[sourceLine, title, byline, original].filter(Boolean));
 
-  const image = createArticleImage(article.imageUrl, article.titleZh, "reader__image");
+  const image = createArticleImage(article.imageUrl, article.titleZh, "reader__image", { eager: true });
 
   const body = createElement("div", "reader__body");
   article.paragraphs.forEach((text) => {

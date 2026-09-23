@@ -55,9 +55,10 @@ export function normalizeImageUrl(value = "", baseUrl = "") {
     if (url.protocol !== "https:") return "";
     // Publisher feeds often attach a small Alibaba OSS thumbnail transform.
     // Request the original asset so cards remain sharp on high-density screens.
-    if (url.searchParams.has("x-oss-process")) {
-      url.searchParams.delete("x-oss-process");
-    }
+    const rawTransform = url.search.slice(1).toLowerCase();
+    url.searchParams.delete("x-oss-process");
+    url.searchParams.delete("x-image-process");
+    if (rawTransform.startsWith("imagemogr2/") || rawTransform.startsWith("imageview2/")) url.search = "";
     return url.href;
   } catch {
     return "";
@@ -90,20 +91,20 @@ export function extractMetadataImageUrl(fragment = "", baseUrl = "") {
 }
 
 export function extractImageUrl(fragment = "", baseUrl = "") {
-  const metadataImage = extractMetadataImageUrl(fragment, baseUrl);
-  if (metadataImage) return metadataImage;
+  // Responsive and original body-image attributes normally retain more pixels
+  // than the social-sharing thumbnail, so inspect them before metadata.
   const candidates = [
     largestSrcsetUrl(fragment.match(/<img\b[^>]*data-srcset=["']([^"']+)["']/i)?.[1]),
     largestSrcsetUrl(fragment.match(/<img\b[^>]*srcset=["']([^"']+)["']/i)?.[1]),
-    fragment.match(/<img\b[^>]*data-src=["']([^"']+)["']/i)?.[1],
     fragment.match(/<img\b[^>]*data-original=["']([^"']+)["']/i)?.[1],
+    fragment.match(/<img\b[^>]*data-src=["']([^"']+)["']/i)?.[1],
     fragment.match(/<img\b[^>]*src=["']([^"']+)["']/i)?.[1],
   ];
   for (const candidate of candidates) {
     const normalized = normalizeImageUrl(candidate, baseUrl);
     if (normalized) return normalized;
   }
-  return "";
+  return extractMetadataImageUrl(fragment, baseUrl);
 }
 
 export function between(value, startPattern, endPattern) {

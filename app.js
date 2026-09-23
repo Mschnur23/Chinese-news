@@ -96,7 +96,7 @@ import {
   revealReviewAnswer,
   downloadAnkiExport,
   showAnkiExportStatus,
-} from "./ui.js?v=flashcards-2";
+} from "./ui.js?v=image-quality-2";
 
 let currentArticle = null;
 let articleRequestVersion = 0;

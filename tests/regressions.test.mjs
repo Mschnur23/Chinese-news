@@ -99,6 +99,59 @@ test("structured output and web search share the same Responses API transport", 
   }
 });
 
+test("OpenAI transport retries transient failures and identifies account failures", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalKey = process.env.OPENAI_API_KEY;
+  const originalConsoleError = console.error;
+  process.env.OPENAI_API_KEY = "test-key";
+  console.error = () => {};
+  const schema = { type: "object", additionalProperties: false, properties: { value: { type: "string" } }, required: ["value"] };
+  try {
+    let requests = 0;
+    globalThis.fetch = async () => {
+      requests += 1;
+      if (requests === 1) {
+        return {
+          ok: false,
+          status: 503,
+          headers: { get(name) { return name === "retry-after" ? "0" : "request-overload"; } },
+          async json() { return { error: { code: "server_is_overloaded", type: "service_unavailable_error" } }; },
+        };
+      }
+      return { ok: true, status: 200, headers: { get() { return null; } }, async json() { return { output_text: '{"value":"ok"}' }; } };
+    };
+    assert.deepEqual(await requestStructuredModel({ instructions: "test", input: "test", schema, schemaName: "test", maxOutputTokens: 50 }), { value: "ok" });
+    assert.equal(requests, 2);
+
+    globalThis.fetch = async () => ({
+      ok: false,
+      status: 429,
+      headers: { get() { return "request-limit"; } },
+      async json() { return { error: { code: "credit_balance_exhausted", type: "insufficient_quota" } }; },
+    });
+    await assert.rejects(
+      requestStructuredModel({ instructions: "test", input: "test", schema, schemaName: "test", maxOutputTokens: 50 }),
+      (error) => error.code === "OPENAI_LIMIT_REACHED" && /credits|spending limit/i.test(error.message),
+    );
+
+    globalThis.fetch = async () => ({
+      ok: false,
+      status: 401,
+      headers: { get() { return "request-auth"; } },
+      async json() { return { error: { code: "invalid_api_key", type: "invalid_request_error" } }; },
+    });
+    await assert.rejects(
+      requestStructuredModel({ instructions: "test", input: "test", schema, schemaName: "test", maxOutputTokens: 50 }),
+      (error) => error.code === "OPENAI_AUTH_FAILED" && /OPENAI_API_KEY/.test(error.message),
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    console.error = originalConsoleError;
+    if (originalKey === undefined) delete process.env.OPENAI_API_KEY;
+    else process.env.OPENAI_API_KEY = originalKey;
+  }
+});
+
 test("Drive sync merges newer review state and honors newer deletions", () => {
   const localMeta = emptyDriveSyncMeta("2026-09-20T10:00:00.000Z");
   const remoteMeta = emptyDriveSyncMeta("2026-09-20T09:00:00.000Z");

@@ -12,6 +12,74 @@ function responseText(payload) {
   return "";
 }
 
+const nonRetryableLimitCodes = new Set([
+  "credit_balance_exhausted",
+  "organization_spend_limit_exceeded",
+  "project_spend_limit_exceeded",
+  "organization_usage_limit_exceeded",
+]);
+
+function providerErrorDetails(response, payload) {
+  return {
+    status: response.status,
+    code: typeof payload?.error?.code === "string" ? payload.error.code : "unknown",
+    type: typeof payload?.error?.type === "string" ? payload.error.type : "unknown",
+    requestId: response.headers?.get?.("x-request-id") || "unavailable",
+  };
+}
+
+function publicProviderError(details) {
+  if (details.status === 401 || details.status === 403) {
+    return new PublicError(
+      "OPENAI_AUTH_FAILED",
+      "OpenAI rejected the server credentials. Replace OPENAI_API_KEY in Vercel and redeploy.",
+      503,
+    );
+  }
+  if (details.status === 429 && (nonRetryableLimitCodes.has(details.code) || details.type === "insufficient_quota")) {
+    return new PublicError(
+      "OPENAI_LIMIT_REACHED",
+      "OpenAI API credits or a spending limit have been reached. Check the project billing and usage limits.",
+      503,
+    );
+  }
+  if (details.status === 429) {
+    return new PublicError("MODEL_RATE_LIMITED", "AI reading support is busy. Wait a moment and retry.", 503);
+  }
+  if (details.status === 400 || details.status === 404) {
+    return new PublicError(
+      "MODEL_REQUEST_REJECTED",
+      "OpenAI rejected the reading-support request. Check OPENAI_MODEL and the Vercel function log.",
+      502,
+    );
+  }
+  return new PublicError("MODEL_PROVIDER_FAILED", "AI reading support is temporarily unavailable. Please retry.", 502);
+}
+
+function isRetryableProviderFailure(details) {
+  if (details.status === 429) {
+    return !nonRetryableLimitCodes.has(details.code) && details.type !== "insufficient_quota";
+  }
+  return details.status === 408 || details.status === 409 || details.status >= 500;
+}
+
+function retryDelayMs(response, attempt) {
+  const retryAfter = response.headers?.get?.("retry-after");
+  const seconds = Number(retryAfter);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, 4000);
+  return 400 * (2 ** attempt) + Math.floor(Math.random() * 150);
+}
+
+function wait(milliseconds, signal) {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(resolve, milliseconds);
+    signal.addEventListener("abort", () => {
+      clearTimeout(timeout);
+      reject(new DOMException("Request cancelled", "AbortError"));
+    }, { once: true });
+  });
+}
+
 async function requestModel({ instructions, input, model, maxOutputTokens, format, tools, toolChoice, include }) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -25,29 +93,49 @@ async function requestModel({ instructions, input, model, maxOutputTokens, forma
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), serverConfig.modelRequestTimeoutMs);
   try {
-    const response = await fetch(serverConfig.openAIEndpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        store: false,
-        instructions,
-        input,
-        reasoning: { effort: "low" },
-        max_output_tokens: maxOutputTokens,
-        ...(tools ? { tools } : {}),
-        ...(toolChoice ? { tool_choice: toolChoice } : {}),
-        ...(include ? { include } : {}),
-        text: { format },
-      }),
-      signal: controller.signal,
+    const requestBody = JSON.stringify({
+      model,
+      store: false,
+      instructions,
+      input,
+      reasoning: { effort: "low" },
+      max_output_tokens: maxOutputTokens,
+      ...(tools ? { tools } : {}),
+      ...(toolChoice ? { tool_choice: toolChoice } : {}),
+      ...(include ? { include } : {}),
+      text: { format },
     });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok) {
-      throw new PublicError("MODEL_PROVIDER_FAILED", "AI reading support is temporarily unavailable. Please retry.", 502);
+    let payload = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      let response;
+      try {
+        response = await fetch(serverConfig.openAIEndpoint, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: requestBody,
+          signal: controller.signal,
+        });
+      } catch (error) {
+        if (error?.name === "AbortError") throw error;
+        console.error("OpenAI Responses API connection failed", { attempt: attempt + 1 });
+        if (attempt < 2) {
+          await wait(retryDelayMs({}, attempt), controller.signal);
+          continue;
+        }
+        throw error;
+      }
+      payload = await response.json().catch(() => null);
+      if (response.ok) break;
+      const details = providerErrorDetails(response, payload);
+      console.error("OpenAI Responses API request failed", details);
+      if (attempt < 2 && isRetryableProviderFailure(details)) {
+        await wait(retryDelayMs(response, attempt), controller.signal);
+        continue;
+      }
+      throw publicProviderError(details);
     }
     const text = responseText(payload);
     if (!text) {

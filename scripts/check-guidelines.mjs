@@ -252,6 +252,10 @@ check(analyzeEndpoint.includes("Return terms in descending occurrence frequency"
 check(analyzeEndpoint.includes("Never select an easy function word merely because it is frequent"), "The analysis prompt must prevent frequency from promoting easy function words");
 check(analyzeEndpoint.includes("general frequency in modern written Chinese"), "The analysis prompt must distinguish general Chinese frequency from article occurrence frequency");
 check(analyzeEndpoint.includes("never a sentence or clause"), "The analysis prompt must prohibit sentence-length vocabulary highlights");
+const modelTransport = await text("api/_shared/model.js");
+check(modelTransport.includes("OPENAI_AUTH_FAILED") && modelTransport.includes("OPENAI_LIMIT_REACHED") && modelTransport.includes("MODEL_REQUEST_REJECTED"), "OpenAI transport must distinguish credentials, account limits, and rejected requests");
+check(modelTransport.includes("isRetryableProviderFailure") && modelTransport.includes("retry-after"), "OpenAI transport must retry only bounded transient failures and respect Retry-After");
+check(!/console\.error\([^\n]*(?:input|instructions|requestBody|payload)/.test(modelTransport), "OpenAI diagnostics must not log prompts, request bodies, or provider payloads");
 const uiSource = await text("ui.js");
 check(uiSource.includes("exactOccurrence: term.termZh"), "The renderer must defensively highlight only the vocabulary term");
 check(uiSource.includes("Estimated frequency in modern written Chinese"), "The vocabulary renderer must explain the standalone frequency number accessibly");
